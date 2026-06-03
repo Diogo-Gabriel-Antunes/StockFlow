@@ -492,7 +492,37 @@ Não implementar inicialmente:
 
 ---
 
-## 10. Prompt base para o Codex
+## 10. Estratégia de Testes
+
+Toda fase implementada do StockFlow deve incluir testes automatizados mínimos. Uma fase só pode ser considerada concluída depois que os testes forem executados e todas as falhas forem corrigidas.
+
+### Backend
+
+- Usar JUnit 5 como base de testes.
+- Usar RestAssured para testar endpoints REST.
+- Criar testes de service quando houver regra de negócio relevante, como autenticação, cálculo de totais, baixa de estoque, aprovação idempotente ou isolamento multi-tenant.
+- Cobrir casos de sucesso, validações obrigatórias, respostas de erro principais e bloqueio de acesso sem autenticação quando aplicável.
+- Em módulos com `company_id`, testar que dados de uma empresa não aparecem para outra.
+
+### Frontend
+
+- Usar Vitest como test runner.
+- Usar React Testing Library para componentes, páginas simples, formulários e interações.
+- Criar testes básicos para componentes reutilizáveis e hooks introduzidos em cada módulo.
+- Mockar cliente HTTP, armazenamento local, cookies e navegação quando necessário.
+- Cobrir estados básicos de carregamento, erro, sucesso e submissão de formulário quando existirem.
+
+### Regra por módulo
+
+Cada módulo novo precisa vir com testes mínimos no backend e/ou frontend conforme o que foi implementado na fase. Não é aceitável entregar CRUD, autenticação, dashboard, estoque, orçamento ou proposta pública sem testes automatizados cobrindo o fluxo principal entregue.
+
+### Antes de concluir uma fase
+
+Executar os testes do backend e do frontend. Se algum teste falhar, corrigir a implementação ou o teste antes de concluir a fase.
+
+---
+
+## 11. Prompt base para o Codex
 
 Use este projeto como um SaaS real chamado StockFlow.
 
@@ -508,5 +538,6 @@ Priorize:
 6. regras de negócio no backend;
 7. UI simples e funcional;
 8. Docker Compose para rodar localmente e em VPS.
+9. testes automatizados obrigatórios em toda fase implementada.
 
 Não implemente funcionalidades fora do MVP sem autorização.

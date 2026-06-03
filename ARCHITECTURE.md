@@ -96,6 +96,8 @@ O backend deve derivar a empresa a partir do usuário autenticado.
 - Flyway
 - Bean Validation
 - SmallRye OpenAPI
+- JUnit 5
+- RestAssured
 
 ### Organização sugerida
 
@@ -190,9 +192,42 @@ frontend/src/
 
 Não colocar toda lógica dentro das páginas. Criar services, hooks e componentes reutilizáveis.
 
+### Testes frontend
+
+- Usar Vitest como test runner.
+- Usar React Testing Library para componentes, páginas simples e interações.
+- Criar testes básicos para componentes reutilizáveis, hooks e fluxos de formulário quando forem introduzidos.
+- Mockar chamadas HTTP nos testes de frontend.
+- Cada módulo novo deve ter pelo menos testes mínimos para os componentes/hooks principais entregues na fase.
+
 ---
 
-## 6. Banco de dados
+## 6. Testes
+
+Toda fase implementada deve vir acompanhada de testes automatizados proporcionais ao escopo.
+
+### Backend
+
+- Usar JUnit 5 para testes unitários e de integração.
+- Usar RestAssured para endpoints REST.
+- Criar testes de service quando houver regra de negócio relevante fora do Resource.
+- Cobrir validações, respostas HTTP principais, autenticação/autorização e isolamento por `company_id` quando o módulo envolver dados multi-tenant.
+- Testes não devem depender de dados de outra empresa ou de estado manual do banco.
+
+### Frontend
+
+- Usar Vitest e React Testing Library.
+- Testar componentes reutilizáveis, hooks e formulários criados em cada fase.
+- Cobrir estados básicos de carregamento, erro e sucesso quando existirem.
+- Mockar serviços HTTP e dependências externas.
+
+### Critério arquitetural obrigatório
+
+Antes de declarar qualquer fase como concluída, os comandos de teste do backend e do frontend devem ser executados. Falhas devem ser corrigidas dentro da própria fase.
+
+---
+
+## 7. Banco de dados
 
 ### Entidades principais
 
@@ -213,7 +248,7 @@ audit_logs
 
 ---
 
-## 7. Segurança
+## 8. Segurança
 
 ### Autenticação
 
@@ -242,7 +277,7 @@ MEMBER
 
 ---
 
-## 8. Proposta pública
+## 9. Proposta pública
 
 A proposta pública deve ser acessada por token seguro.
 
@@ -263,7 +298,7 @@ Regras:
 
 ---
 
-## 9. PDF
+## 10. PDF
 
 No MVP, o PDF pode ser gerado sob demanda.
 
@@ -277,7 +312,7 @@ No MVP, priorizar funcionamento simples.
 
 ---
 
-## 10. Deploy
+## 11. Deploy
 
 ### Desenvolvimento
 
@@ -306,7 +341,7 @@ docker compose down
 
 ---
 
-## 11. Observabilidade mínima
+## 12. Observabilidade mínima
 
 Para o MVP:
 

@@ -43,6 +43,8 @@ Criar uma aplicação SaaS multi-tenant onde cada empresa consegue:
 - Bean Validation
 - Flyway para migrations
 - SmallRye OpenAPI / Swagger UI
+- JUnit 5
+- RestAssured
 
 ### Frontend
 
@@ -53,6 +55,8 @@ Criar uma aplicação SaaS multi-tenant onde cada empresa consegue:
 - React Hook Form
 - Zod
 - TanStack Query
+- Vitest
+- React Testing Library
 
 ### Infraestrutura
 
@@ -125,22 +129,21 @@ Swagger:  http://localhost:8080/q/swagger-ui
 PostgreSQL: localhost:5432
 ```
 
+Usuário padrão de desenvolvimento criado pelas migrations:
+
+```txt
+E-mail: admin@stockflow.local
+Senha:  Admin123!
+Perfil: OWNER
+```
+
 ---
 
 ## Convenções para o Codex
 
-Ao implementar este projeto, siga estas regras:
+Antes de qualquer implementação, o Codex deve ler e seguir obrigatoriamente o arquivo `CODEX_RULES.md`.
 
-1. Não transforme o MVP em ERP completo.
-2. Sempre manter isolamento multi-tenant por `company_id`.
-3. Toda entidade operacional deve pertencer a uma empresa.
-4. Nunca retornar dados de outra empresa na API.
-5. Usar DTOs para entrada e saída.
-6. Não expor entidades JPA diretamente nos endpoints.
-7. Criar migrations para qualquer alteração de banco.
-8. Criar validações de entrada no backend.
-9. Criar componentes reutilizáveis no frontend.
-10. Manter o fluxo principal simples: cliente, produto, estoque, orçamento, proposta.
+Esse arquivo centraliza as regras de produto, arquitetura, multi-tenant, testes obrigatórios e conclusão de fases.
 
 ---
 
