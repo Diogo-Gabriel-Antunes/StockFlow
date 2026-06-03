@@ -1,11 +1,5 @@
-import { PrivatePlaceholder } from "@/components/layout/private-placeholder";
+import { QuotesPage as QuotesFeaturePage } from "@/features/quotes/quotes-page";
 
 export default function QuotesPage() {
-  return (
-    <PrivatePlaceholder
-      description="Orçamentos serão implementados em fase própria do MVP."
-      eyebrow="Orçamentos"
-      title="Orçamentos"
-    />
-  );
+  return <QuotesFeaturePage />;
 }

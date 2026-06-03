@@ -26,6 +26,12 @@ public class CustomerRepository implements PanacheRepositoryBase<CustomerEntity,
         return find("company.id = ?1 and id = ?2 and active = true", companyId, id).firstResultOptional();
     }
 
+    public List<CustomerEntity> listRecentActiveByCompany(UUID companyId, int limit) {
+        return find("company.id = ?1 and active = true", Sort.by("createdAt").descending(), companyId)
+                .page(Page.of(0, limit))
+                .list();
+    }
+
     private String query(String search) {
         if (search == null || search.isBlank()) {
             return "company.id = :companyId and active = true";

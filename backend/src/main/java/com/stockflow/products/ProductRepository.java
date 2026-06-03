@@ -26,6 +26,20 @@ public class ProductRepository implements PanacheRepositoryBase<ProductEntity, U
         return find("company.id = ?1 and id = ?2 and active = true", companyId, id).firstResultOptional();
     }
 
+    public long countLowStockByCompany(UUID companyId) {
+        return count("company.id = ?1 and active = true and stockQuantity <= minimumStock", companyId);
+    }
+
+    public List<ProductEntity> listLowStockByCompany(UUID companyId, int limit) {
+        return find(
+                "company.id = ?1 and active = true and stockQuantity <= minimumStock",
+                Sort.by("stockQuantity").ascending().and("name").ascending(),
+                companyId
+        )
+                .page(Page.of(0, limit))
+                .list();
+    }
+
     private String query(String search) {
         if (search == null || search.isBlank()) {
             return "company.id = :companyId and active = true";
