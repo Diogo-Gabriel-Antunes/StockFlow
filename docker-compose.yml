@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stockflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stockflow}
+      POSTGRES_USER: ${POSTGRES_USER:-stockflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stockflow_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - stockflow_postgres_data:/var/lib/postgresql/data
+    networks:
+      - stockflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stockflow} -d ${POSTGRES_DB:-stockflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: stockflow-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      QUARKUS_HTTP_PORT: ${QUARKUS_HTTP_PORT:-8080}
+      QUARKUS_PROFILE: ${QUARKUS_PROFILE:-dev}
+      DB_JDBC_URL: ${DB_JDBC_URL:-jdbc:postgresql://postgres:5432/stockflow}
+      DB_USERNAME: ${DB_USERNAME:-stockflow}
+      DB_PASSWORD: ${DB_PASSWORD:-stockflow_dev_password}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_ISSUER: ${JWT_ISSUER:-stockflow}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      PUBLIC_QUOTE_BASE_URL: ${PUBLIC_QUOTE_BASE_URL:-http://localhost:3000/public/quotes}
+      PDF_STORAGE_MODE: ${PDF_STORAGE_MODE:-local}
+      STORAGE_LOCAL_PATH: ${STORAGE_LOCAL_PATH:-/app/storage}
+    ports:
+      - "8080:8080"
+    volumes:
+      - stockflow_backend_storage:/app/storage
+    networks:
+      - stockflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/q/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    container_name: stockflow-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-StockFlow}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_PUBLIC_APP_URL: ${NEXT_PUBLIC_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    networks:
+      - stockflow-network
+
+volumes:
+  stockflow_postgres_data:
+  stockflow_backend_storage:
+
+networks:
+  stockflow-network:
+    driver: bridge
