@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Boxes, FileText, LogOut, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AppLayout } from "@/components/layout/app-layout";
 import { getMe } from "@/features/auth/auth-service";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 
@@ -47,8 +48,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-page">
-      <div className="mx-auto max-w-6xl px-6 py-8">
+    <AppLayout>
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-primary">StockFlow</p>
@@ -97,7 +97,6 @@ export default function DashboardPage() {
             </p>
           </section>
         ) : null}
-      </div>
-    </main>
+    </AppLayout>
   );
 }
