@@ -1,11 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, SlidersHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, Boxes, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  TableShell,
+} from "@/components/ui/table";
 import { TextField } from "@/components/ui/text-field";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { listProducts } from "@/features/products/product-service";
@@ -126,22 +141,23 @@ export function StockPage() {
   }
 
   return (
-    <AppLayout>
-      <header className="mb-6">
-        <p className="text-sm font-medium text-primary">Estoque</p>
-        <h1 className="text-2xl font-semibold text-ink">Movimentações de estoque</h1>
-        <p className="mt-1 text-sm text-muted">
-          Registre entradas, saídas e ajustes com histórico por produto.
-        </p>
-      </header>
+    <AppLayout maxWidth="wide">
+      <PageHeader
+        eyebrow="Estoque"
+        subtitle="Registre entradas, saídas e ajustes com histórico por produto."
+        title="Movimentações de estoque"
+      />
 
-      <section className="mb-6 rounded-lg border border-border bg-panel p-5 shadow-subtle">
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Nova movimentação</CardTitle>
+        </CardHeader>
         <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 px-5 pt-5 lg:grid-cols-3">
             <label className="grid gap-1.5" htmlFor="productId">
               <span className="text-sm font-medium text-ink">Produto</span>
               <select
-                className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
+                className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
                 id="productId"
                 {...register("productId")}
               >
@@ -162,7 +178,7 @@ export function StockPage() {
             <label className="grid gap-1.5" htmlFor="action">
               <span className="text-sm font-medium text-ink">Tipo</span>
               <select
-                className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
+                className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
                 id="action"
                 {...register("action")}
               >
@@ -193,68 +209,78 @@ export function StockPage() {
             )}
           </div>
 
-          <TextField label="Motivo" {...register("reason")} />
+          <div className="px-5">
+            <TextField label="Motivo" {...register("reason")} />
+          </div>
 
           {formError ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+            <div className="mx-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
               {formError}
             </div>
           ) : null}
 
-          <div className="flex justify-end">
-            <button
-              className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+          <div className="flex justify-end border-t border-border px-5 py-4">
+            <Button
               disabled={isSubmitting || submitMovement.isPending}
               type="submit"
             >
               {submitMovement.isPending ? "Registrando..." : "Registrar movimentação"}
-            </button>
+            </Button>
           </div>
         </form>
-      </section>
+      </Card>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-panel shadow-subtle">
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle>Histórico de movimentações</CardTitle>
+        </CardHeader>
         {movements.isLoading ? (
-          <p className="p-5 text-sm text-muted">Carregando histórico...</p>
+          <LoadingState text="Carregando histórico..." />
         ) : null}
         {movements.isError ? (
-          <p className="p-5 text-sm font-medium text-red-700">
-            Não foi possível carregar o histórico.
-          </p>
+          <ErrorState text="Não foi possível carregar o histórico." />
         ) : null}
         {movements.data && movements.data.items.length === 0 ? (
-          <p className="p-5 text-sm text-muted">Nenhuma movimentação encontrada.</p>
+          <EmptyState
+            description="Selecione um produto e registre uma entrada, saída ou ajuste para iniciar o histórico."
+            icon={<Boxes size={20} aria-hidden="true" />}
+            title="Nenhuma movimentação encontrada"
+          />
         ) : null}
         {movements.data && movements.data.items.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-muted">
+          <TableShell>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Produto</th>
-                  <th className="px-4 py-3 font-semibold">Tipo</th>
-                  <th className="px-4 py-3 font-semibold">Anterior</th>
-                  <th className="px-4 py-3 font-semibold">Novo</th>
-                  <th className="px-4 py-3 font-semibold">Motivo</th>
+                  <TableHeaderCell>Produto</TableHeaderCell>
+                  <TableHeaderCell>Tipo</TableHeaderCell>
+                  <TableHeaderCell>Anterior</TableHeaderCell>
+                  <TableHeaderCell>Novo</TableHeaderCell>
+                  <TableHeaderCell>Motivo</TableHeaderCell>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody>
                 {movements.data.items.map((movement) => (
-                  <tr className="border-t border-border" key={movement.id}>
-                    <td className="px-4 py-3">
+                  <TableRow key={movement.id}>
+                    <TableCell primary>
                       <p className="font-semibold text-ink">{movement.productName}</p>
                       <p className="text-xs text-muted">{movement.productSku ?? "-"}</p>
-                    </td>
-                    <td className="px-4 py-3 text-muted">{movementLabel(movement.type)}</td>
-                    <td className="px-4 py-3 text-muted">{movement.previousQuantity}</td>
-                    <td className="px-4 py-3 text-muted">{movement.newQuantity}</td>
-                    <td className="px-4 py-3 text-muted">{movement.reason ?? "-"}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell>
+                      <Badge tone={movementTone(movement.type)}>
+                        {movementLabel(movement.type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{movement.previousQuantity}</TableCell>
+                    <TableCell>{movement.newQuantity}</TableCell>
+                    <TableCell>{movement.reason ?? "-"}</TableCell>
+                  </TableRow>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </TableShell>
         ) : null}
-      </section>
+      </Card>
     </AppLayout>
   );
 }
@@ -268,4 +294,18 @@ function movementLabel(type: StockMovementType) {
     CANCELLATION: "Cancelamento",
   };
   return labels[type];
+}
+
+function movementTone(type: StockMovementType) {
+  const tones: Record<
+    StockMovementType,
+    "success" | "danger" | "info" | "warning" | "slate"
+  > = {
+    IN: "success",
+    OUT: "danger",
+    ADJUSTMENT: "info",
+    SALE: "warning",
+    CANCELLATION: "slate",
+  };
+  return tones[type];
 }

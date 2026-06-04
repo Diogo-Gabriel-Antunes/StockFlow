@@ -7,7 +7,11 @@ type Theme = "light" | "dark";
 
 const STORAGE_KEY = "stockflow_theme";
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  variant?: "default" | "sidebar";
+};
+
+export function ThemeToggle({ variant = "default" }: ThemeToggleProps) {
   const [theme, setTheme] = useState<Theme>(() => initialTheme());
 
   useEffect(() => {
@@ -23,11 +27,16 @@ export function ThemeToggle() {
 
   const dark = theme === "dark";
 
+  const className =
+    variant === "sidebar"
+      ? "inline-flex h-10 items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
+      : "inline-flex h-10 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800";
+
   return (
     <button
       aria-label={dark ? "Ativar modo claro" : "Ativar modo escuro"}
       aria-pressed={dark}
-      className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+      className={className}
       onClick={toggleTheme}
       type="button"
     >

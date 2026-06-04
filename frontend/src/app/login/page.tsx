@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { TextField } from "@/components/ui/text-field";
@@ -13,7 +13,11 @@ import type { LoginInput } from "@/features/auth/types";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : window.sessionStorage.getItem("stockflow_session_message"),
+  );
   const {
     register,
     handleSubmit,
@@ -25,6 +29,12 @@ export default function LoginPage() {
       password: "",
     },
   });
+
+  useEffect(() => {
+    if (window.sessionStorage.getItem("stockflow_session_message")) {
+      window.sessionStorage.removeItem("stockflow_session_message");
+    }
+  }, []);
 
   async function onSubmit(input: LoginInput) {
     setFormError(null);
@@ -39,7 +49,6 @@ export default function LoginPage() {
 
     try {
       const response = await login(parsed.data);
-      console.log("[auth] login response", response);
       storeToken(response.token);
       router.push("/dashboard");
       router.refresh();

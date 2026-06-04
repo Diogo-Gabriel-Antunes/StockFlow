@@ -1,11 +1,28 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Boxes, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Modal } from "@/components/ui/Modal";
+import { ActionButton } from "@/components/ui/action-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  TableShell,
+} from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { deleteProduct, listProducts } from "./product-service";
 import { ProductForm } from "./product-form";
@@ -71,106 +88,113 @@ export function ProductsPage() {
     queryClient.invalidateQueries({ queryKey: ["products"] });
   }
 
+  function confirmDelete(product: Product) {
+    if (
+      window.confirm(
+        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
+      )
+    ) {
+      removeProduct.mutate(product.id);
+    }
+  }
+
   return (
-    <AppLayout>
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-primary">Produtos</p>
-          <h1 className="text-2xl font-semibold text-ink">Cadastro de produtos</h1>
-          <p className="mt-1 text-sm text-muted">
-            Organize itens físicos, preços e estoque mínimo.
-          </p>
-        </div>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-          onClick={openCreateModal}
-          type="button"
-        >
-          <Plus size={17} aria-hidden="true" />
-          Novo produto
-        </button>
-      </header>
+    <AppLayout maxWidth="wide">
+      <PageHeader
+        action={
+          <Button onClick={openCreateModal} type="button">
+            <Plus size={17} aria-hidden="true" />
+            Novo produto
+          </Button>
+        }
+        eyebrow="Produtos"
+        subtitle="Organize itens físicos, preços e estoque mínimo."
+        title="Cadastro de produtos"
+      />
 
-      <form className="mb-4 flex gap-2" onSubmit={submitSearch}>
-        <div className="relative flex-1">
-          <Search
-            aria-hidden="true"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={17}
-          />
-          <input
-            className="h-11 w-full rounded-md border border-border bg-white pl-9 pr-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por nome, SKU ou categoria"
-            value={search}
-          />
-        </div>
-        <button
-          className="h-11 rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          type="submit"
-        >
-          Buscar
-        </button>
-      </form>
+      <DataToolbar
+        onSubmit={submitSearch}
+        search={{
+          onChange: setSearch,
+          placeholder: "Buscar por nome, SKU ou categoria",
+          value: search,
+        }}
+      />
 
-      <section className="overflow-hidden rounded-lg border border-border bg-panel shadow-subtle">
-        {products.isLoading ? <p className="p-5 text-sm text-muted">Carregando produtos...</p> : null}
+      <Card className="overflow-hidden">
+        {products.isLoading ? <LoadingState text="Carregando produtos..." /> : null}
         {products.isError ? (
-          <p className="p-5 text-sm font-medium text-red-700">Não foi possível carregar os produtos.</p>
+          <ErrorState text="Não foi possível carregar os produtos." />
         ) : null}
         {products.data && products.data.items.length === 0 ? (
-          <p className="p-5 text-sm text-muted">Nenhum produto encontrado.</p>
+          <EmptyState
+            action={
+              <Button onClick={openCreateModal} type="button">
+                <Plus size={17} aria-hidden="true" />
+                Novo produto
+              </Button>
+            }
+            description="Cadastre produtos para montar orçamentos e acompanhar estoque mínimo."
+            icon={<Boxes size={20} aria-hidden="true" />}
+            title="Nenhum produto cadastrado"
+          />
         ) : null}
         {products.data && products.data.items.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-muted">
+          <TableShell>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Produto</th>
-                  <th className="px-4 py-3 font-semibold">Preço</th>
-                  <th className="px-4 py-3 font-semibold">Estoque</th>
-                  <th className="px-4 py-3 text-right font-semibold">Ações</th>
+                  <TableHeaderCell>Produto</TableHeaderCell>
+                  <TableHeaderCell>Preço</TableHeaderCell>
+                  <TableHeaderCell>Estoque</TableHeaderCell>
+                  <TableHeaderCell align="right">Ações</TableHeaderCell>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody>
                 {products.data.items.map((product) => (
-                  <tr className="border-t border-border" key={product.id}>
-                    <td className="px-4 py-3">
+                  <TableRow key={product.id}>
+                    <TableCell primary>
                       <p className="font-semibold text-ink">{product.name}</p>
                       <p className="text-xs text-muted">{product.sku ?? product.category ?? "-"}</p>
-                    </td>
-                    <td className="px-4 py-3 text-muted">{formatMoney(product.salePrice)}</td>
-                    <td className="px-4 py-3 text-muted">
-                      {product.stockQuantity} {product.unit} · mín. {product.minimumStock}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>{formatMoney(product.salePrice)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>
+                          {product.stockQuantity} {product.unit} · mín. {product.minimumStock}
+                        </span>
+                        {product.stockQuantity <= product.minimumStock ? (
+                          <Badge tone="warning">Baixo</Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell align="right">
                       <div className="flex justify-end gap-2">
-                        <button
+                        <ActionButton
                           aria-label={`Editar ${product.name}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
                           onClick={() => openEditModal(product)}
                           type="button"
                         >
                           <Pencil size={16} aria-hidden="true" />
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
                           aria-label={`Excluir ${product.name}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
                           disabled={removeProduct.isPending}
-                          onClick={() => removeProduct.mutate(product.id)}
+                          onClick={() => confirmDelete(product)}
                           type="button"
+                          variant="danger"
                         >
                           <Trash2 size={16} aria-hidden="true" />
-                        </button>
+                        </ActionButton>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </TableShell>
         ) : null}
-      </section>
+      </Card>
       <Modal
         description="Atualize preços, estoque inicial e dados do produto sem sair da listagem."
         isOpen={isOpen}

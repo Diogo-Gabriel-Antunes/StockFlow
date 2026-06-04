@@ -1,8 +1,16 @@
 import { env } from "@/lib/env";
+import { clearToken } from "@/features/auth/auth-storage";
 
 type RequestOptions = RequestInit & {
   token?: string;
 };
+
+export class SessionExpiredError extends Error {
+  constructor(message = "Sua sessão expirou. Faça login novamente.") {
+    super(message);
+    this.name = "SessionExpiredError";
+  }
+}
 
 export async function apiRequest<T>(
   path: string,
@@ -15,17 +23,14 @@ export async function apiRequest<T>(
     ...headers,
   };
 
-  if (path === "/auth/me") {
-    console.log("[auth] GET /auth/me Authorization header", requestHeaders.Authorization);
-  }
-
   const response = await fetch(`${env.apiUrl}${path}`, {
     ...options,
     headers: requestHeaders,
   });
 
-  if (path === "/auth/me") {
-    console.log("[auth] GET /auth/me status", response.status);
+  if (response.status === 401 && shouldHandleUnauthorized(path)) {
+    handleUnauthorized();
+    throw new SessionExpiredError();
   }
 
   if (!response.ok) {
@@ -38,4 +43,24 @@ export async function apiRequest<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+function shouldHandleUnauthorized(path: string) {
+  return !path.startsWith("/auth/login")
+    && !path.startsWith("/auth/register")
+    && !path.startsWith("/public/");
+}
+
+function handleUnauthorized() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  clearToken();
+  window.sessionStorage.setItem(
+    "stockflow_session_message",
+    "Sua sessão expirou. Faça login novamente.",
+  );
+  if (window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
 }

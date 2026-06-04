@@ -1,11 +1,25 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Boxes, FileText, LogOut, Percent, TrendingUp } from "lucide-react";
+import { Boxes, FileText, Percent, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  TableShell,
+} from "@/components/ui/table";
 import { getMe } from "@/features/auth/auth-service";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { statusLabel } from "@/features/quotes/quotes-page";
@@ -45,42 +59,24 @@ export function DashboardPage() {
     }
   }, [me.isError, router, token]);
 
-  function logout() {
-    clearToken();
-    router.replace("/login");
-    router.refresh();
-  }
-
   return (
-    <AppLayout>
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-primary">StockFlow</p>
-          <h1 className="text-2xl font-semibold text-ink">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">
-            {me.isLoading ? "Carregando..." : me.data?.company.name ?? "Visão gerencial"}
-          </p>
-        </div>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          onClick={logout}
-          type="button"
-        >
-          <LogOut size={17} aria-hidden="true" />
-          Sair
-        </button>
-      </header>
+    <AppLayout maxWidth="wide">
+      <PageHeader
+        eyebrow={me.isLoading ? "StockFlow" : me.data?.company.name ?? "StockFlow"}
+        subtitle="Visão geral da operação, orçamentos e estoque."
+        title="Dashboard"
+      />
 
       {summary.isLoading ? (
-        <p className="rounded-lg border border-border bg-panel p-5 text-sm text-muted shadow-subtle">
-          Carregando indicadores...
-        </p>
+        <Card>
+          <LoadingState text="Carregando indicadores..." />
+        </Card>
       ) : null}
 
       {summary.isError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-800">
-          Não foi possível carregar os indicadores agora.
-        </p>
+        <Card>
+          <ErrorState text="Não foi possível carregar os indicadores agora." />
+        </Card>
       ) : null}
 
       {summary.data ? <DashboardContent summary={summary.data} /> : null}
@@ -119,20 +115,22 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
 
   return (
     <div className="grid gap-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
             <article
-              className="rounded-lg border border-border bg-panel p-4 shadow-subtle"
+              className="min-h-36 rounded-lg border border-border bg-panel p-5 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-md"
               key={card.label}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-muted">{card.label}</p>
-                  <p className="mt-2 text-2xl font-semibold text-ink">{card.value}</p>
+                  <p className="text-sm font-medium text-muted">{card.label}</p>
+                  <p className="mt-4 text-3xl font-semibold tracking-tight text-ink">
+                    {card.value}
+                  </p>
                 </div>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-teal-50 text-primary">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-50 text-primary dark:bg-slate-900">
                   <Icon size={20} aria-hidden="true" />
                 </span>
               </div>
@@ -146,26 +144,30 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
           {summary.recentQuotes.length === 0 ? (
             <EmptyRow text="Nenhum orçamento encontrado." />
           ) : (
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-muted">
+            <TableShell>
+              <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Código</th>
-                  <th className="px-4 py-3 font-semibold">Cliente</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Total</th>
+                  <TableHeaderCell>Código</TableHeaderCell>
+                  <TableHeaderCell>Cliente</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Total</TableHeaderCell>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody>
                 {summary.recentQuotes.map((quote) => (
-                  <tr className="border-t border-border" key={quote.id}>
-                    <td className="px-4 py-3 font-semibold text-ink">{quote.code}</td>
-                    <td className="px-4 py-3 text-muted">{quote.customerName}</td>
-                    <td className="px-4 py-3 text-muted">{statusLabel(quote.status)}</td>
-                    <td className="px-4 py-3 text-muted">{currency(quote.total)}</td>
-                  </tr>
+                  <TableRow key={quote.id}>
+                    <TableCell primary>{quote.code}</TableCell>
+                    <TableCell>{quote.customerName}</TableCell>
+                    <TableCell>
+                      <Badge tone={statusTone(quote.status)}>{statusLabel(quote.status)}</Badge>
+                    </TableCell>
+                    <TableCell>{currency(quote.total)}</TableCell>
+                  </TableRow>
                 ))}
               </tbody>
-            </table>
+              </DataTable>
+            </TableShell>
           )}
         </TableSection>
 
@@ -173,24 +175,26 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
           {summary.recentCustomers.length === 0 ? (
             <EmptyRow text="Nenhum cliente encontrado." />
           ) : (
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-muted">
+            <TableShell>
+              <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Nome</th>
-                  <th className="px-4 py-3 font-semibold">Contato</th>
+                  <TableHeaderCell>Nome</TableHeaderCell>
+                  <TableHeaderCell>Contato</TableHeaderCell>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody>
                 {summary.recentCustomers.map((customer) => (
-                  <tr className="border-t border-border" key={customer.id}>
-                    <td className="px-4 py-3 font-semibold text-ink">{customer.name}</td>
-                    <td className="px-4 py-3 text-muted">
+                  <TableRow key={customer.id}>
+                    <TableCell primary>{customer.name}</TableCell>
+                    <TableCell>
                       {customer.email ?? customer.phone ?? "-"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
               </tbody>
-            </table>
+              </DataTable>
+            </TableShell>
           )}
         </TableSection>
       </section>
@@ -199,35 +203,39 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
         {summary.lowStockProducts.length === 0 ? (
           <EmptyRow text="Nenhum produto crítico no momento." />
         ) : (
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-muted">
+          <TableShell>
+            <DataTable>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 font-semibold">Produto</th>
-                <th className="px-4 py-3 font-semibold">Estoque</th>
-                <th className="px-4 py-3 font-semibold">Mínimo</th>
-                <th className="px-4 py-3 font-semibold">Compra sugerida</th>
+                <TableHeaderCell>Produto</TableHeaderCell>
+                <TableHeaderCell>Estoque</TableHeaderCell>
+                <TableHeaderCell>Mínimo</TableHeaderCell>
+                <TableHeaderCell>Compra sugerida</TableHeaderCell>
               </tr>
-            </thead>
+            </TableHead>
             <tbody>
               {summary.lowStockProducts.map((product) => (
-                <tr className="border-t border-border" key={product.id}>
-                  <td className="px-4 py-3">
+                <TableRow key={product.id}>
+                  <TableCell primary>
                     <p className="font-semibold text-ink">{product.name}</p>
                     <p className="text-xs text-muted">{product.sku ?? "-"}</p>
-                  </td>
-                  <td className="px-4 py-3 text-muted">
+                  </TableCell>
+                  <TableCell>
                     {product.stockQuantity} {product.unit}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
+                  </TableCell>
+                  <TableCell>
                     {product.minimumStock} {product.unit}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {product.suggestedPurchaseQuantity} {product.unit}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>
+                    <Badge tone="amber">
+                      {product.suggestedPurchaseQuantity} {product.unit}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))}
             </tbody>
-          </table>
+            </DataTable>
+          </TableShell>
         )}
       </TableSection>
     </div>
@@ -236,17 +244,17 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
 
 function TableSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-panel shadow-subtle">
-      <h2 className="border-b border-border px-4 py-3 text-sm font-semibold text-ink">
-        {title}
-      </h2>
-      <div className="overflow-x-auto">{children}</div>
-    </section>
+    <Card className="overflow-hidden">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      {children}
+    </Card>
   );
 }
 
 function EmptyRow({ text }: { text: string }) {
-  return <p className="p-5 text-sm text-muted">{text}</p>;
+  return <EmptyState text={text} />;
 }
 
 function currency(value: number) {
@@ -254,4 +262,16 @@ function currency(value: number) {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+function statusTone(status: Parameters<typeof statusLabel>[0]) {
+  const tones = {
+    APPROVED: "green",
+    CANCELLED: "slate",
+    DRAFT: "blue",
+    EXPIRED: "amber",
+    REJECTED: "red",
+    SENT: "amber",
+  } as const;
+  return tones[status];
 }

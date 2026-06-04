@@ -50,7 +50,7 @@ export function Modal({
   const widthClass = size === "wide" ? "max-w-5xl" : "max-w-2xl";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/55 px-4 py-6 sm:py-10">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/65 px-4 py-6 backdrop-blur-sm sm:py-10">
       <button
         aria-label="Fechar modal"
         className="fixed inset-0 cursor-default"
@@ -61,10 +61,10 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`relative w-full ${widthClass} rounded-lg border border-border bg-panel shadow-subtle`}
+        className={`relative w-full ${widthClass} overflow-hidden rounded-xl border border-border bg-panel shadow-2xl shadow-slate-950/20`}
         role="dialog"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <header className="flex items-start justify-between gap-4 border-b border-border bg-slate-50/70 px-6 py-5 dark:bg-white/[0.03]">
           <div>
             <h2 className="text-lg font-semibold text-ink" id={titleId}>{title}</h2>
             {description ? (
@@ -73,14 +73,14 @@ export function Modal({
           </div>
           <button
             aria-label="Fechar"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-panel text-ink transition hover:bg-slate-50"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-panel text-ink transition hover:bg-slate-50 dark:hover:bg-slate-800"
             onClick={onClose}
             type="button"
           >
             <X size={18} aria-hidden="true" />
           </button>
         </header>
-        <div className="px-5 py-5">{children}</div>
+        <div className="px-6 py-6">{children}</div>
       </section>
     </div>
   );

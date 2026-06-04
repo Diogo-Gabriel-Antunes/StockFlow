@@ -1,22 +1,22 @@
 import type { ReactNode } from "react";
+import { PageShell } from "@/components/ui/page-shell";
+import { AuthGuard } from "./auth-guard";
 import { Sidebar } from "./sidebar";
 
 type AppLayoutProps = {
   children: ReactNode;
-  maxWidth?: "default" | "narrow";
+  maxWidth?: "default" | "narrow" | "wide";
 };
 
 export function AppLayout({ children, maxWidth = "default" }: AppLayoutProps) {
-  const widthClass = maxWidth === "narrow" ? "max-w-3xl" : "max-w-6xl";
-
   return (
-    <main className="min-h-screen bg-page">
-      <Sidebar />
-      <div className="lg:pl-72">
-        <div className={`mx-auto ${widthClass} px-6 py-8 pt-20 lg:pt-8`}>
-          {children}
+    <AuthGuard>
+      <main className="min-h-screen bg-page">
+        <Sidebar />
+        <div className="lg:pl-72">
+          <PageShell maxWidth={maxWidth}>{children}</PageShell>
         </div>
-      </div>
-    </main>
+      </main>
+    </AuthGuard>
   );
 }

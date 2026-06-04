@@ -82,7 +82,7 @@ export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemF
       <label className="grid gap-1.5" htmlFor="description">
         <span className="text-sm font-medium text-ink">Descrição</span>
         <textarea
-          className="min-h-28 rounded-md border border-border bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-teal-100"
+          className="min-h-28 rounded-md border border-border bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-slate-500"
           id="description"
           {...register("description")}
         />
@@ -106,7 +106,7 @@ export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemF
       </div>
 
       {formError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
           {formError}
         </div>
       ) : null}
@@ -114,7 +114,7 @@ export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemF
       <div className="flex flex-wrap justify-end gap-3">
         {onCancel ? (
           <button
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
             onClick={onCancel}
             type="button"
           >
@@ -122,14 +122,14 @@ export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemF
           </button>
         ) : (
           <Link
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
             href="/services"
           >
             Cancelar
           </Link>
         )}
         <button
-          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-sky-400/90"
           disabled={isSubmitting}
           type="submit"
         >

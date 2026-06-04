@@ -4,26 +4,26 @@
 
 :root {
   color-scheme: light;
-  --color-border: 215 221 229;
-  --color-ink: 23 32 42;
+  --color-border: 221 226 235;
+  --color-ink: 15 23 42;
   --color-muted: 100 116 139;
   --color-panel: 255 255 255;
-  --color-page: 246 248 251;
-  --color-primary: 15 118 110;
+  --color-page: 248 250 252;
+  --color-primary: 14 116 144;
   --color-accent: 180 83 9;
-  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 :root.dark {
   color-scheme: dark;
-  --color-border: 51 65 85;
-  --color-ink: 226 232 240;
-  --color-muted: 148 163 184;
-  --color-panel: 15 23 42;
-  --color-page: 2 6 23;
-  --color-primary: 45 212 191;
+  --color-border: 45 55 72;
+  --color-ink: 241 245 249;
+  --color-muted: 165 180 198;
+  --color-panel: 17 24 39;
+  --color-page: 3 7 18;
+  --color-primary: 56 189 248;
   --color-accent: 251 191 36;
-  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.36), 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 * {
@@ -45,33 +45,4 @@ body {
 a {
   color: inherit;
   text-decoration: none;
-}
-
-.dark .bg-white {
-  background-color: rgb(15 23 42);
-}
-
-.dark .bg-slate-50 {
-  background-color: rgb(30 41 59);
-}
-
-.dark .text-slate-600,
-.dark .text-slate-400 {
-  color: rgb(var(--color-muted));
-}
-
-.dark .hover\:bg-slate-50:hover {
-  background-color: rgb(30 41 59);
-}
-
-.dark .bg-teal-50 {
-  background-color: rgb(19 78 74);
-}
-
-.dark .focus\:ring-teal-100:focus {
-  --tw-ring-color: rgb(20 184 166 / 0.24);
-}
-
-.dark .border-teal-200 {
-  border-color: rgb(20 184 166 / 0.45);
 }

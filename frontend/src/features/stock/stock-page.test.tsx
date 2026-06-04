@@ -145,7 +145,7 @@ describe("StockPage", () => {
   test("validates product selection", async () => {
     renderWithQueryClient();
 
-    fireEvent.click(screen.getByRole("button", { name: "Registrar movimentação" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Registrar movimentação" }));
 
     expect(await screen.findByText("Produto é obrigatório.")).toBeInTheDocument();
     expect(createStockEntry).not.toHaveBeenCalled();

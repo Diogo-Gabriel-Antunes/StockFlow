@@ -1,12 +1,29 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Modal } from "@/components/ui/Modal";
+import { ActionButton } from "@/components/ui/action-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  TableShell,
+} from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { deleteQuote, listQuotes } from "./quote-service";
 import { QuoteForm } from "./quote-form";
@@ -75,30 +92,33 @@ export function QuotesPage() {
     queryClient.invalidateQueries({ queryKey: ["quotes"] });
   }
 
-  return (
-    <AppLayout>
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-primary">Orçamentos</p>
-          <h1 className="text-2xl font-semibold text-ink">Gestão de orçamentos</h1>
-          <p className="mt-1 text-sm text-muted">
-            Crie propostas com produtos, serviços e cálculo automático de totais.
-          </p>
-        </div>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-          onClick={openCreateModal}
-          type="button"
-        >
-          <Plus size={17} aria-hidden="true" />
-          Novo orçamento
-        </button>
-      </header>
+  function confirmCancel(quote: Quote) {
+    if (
+      window.confirm(
+        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
+      )
+    ) {
+      removeQuote.mutate(quote.id);
+    }
+  }
 
-      <div className="mb-4 flex max-w-xs items-center gap-2">
-        <Search size={17} className="text-slate-400" aria-hidden="true" />
+  return (
+    <AppLayout maxWidth="wide">
+      <PageHeader
+        action={
+          <Button onClick={openCreateModal} type="button">
+            <Plus size={17} aria-hidden="true" />
+            Novo orçamento
+          </Button>
+        }
+        eyebrow="Orçamentos"
+        subtitle="Crie propostas com produtos, serviços e cálculo automático de totais."
+        title="Gestão de orçamentos"
+      />
+
+      <DataToolbar>
         <select
-          className="h-11 flex-1 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
+          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-72"
           onChange={(event) => setStatus(event.target.value as QuoteStatus | "")}
           value={status}
         >
@@ -108,72 +128,81 @@ export function QuotesPage() {
             </option>
           ))}
         </select>
-      </div>
+      </DataToolbar>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-panel shadow-subtle">
-        {quotes.isLoading ? <p className="p-5 text-sm text-muted">Carregando orçamentos...</p> : null}
+      <Card className="overflow-hidden">
+        {quotes.isLoading ? <LoadingState text="Carregando orçamentos..." /> : null}
         {quotes.isError ? (
-          <p className="p-5 text-sm font-medium text-red-700">
-            Não foi possível carregar os orçamentos.
-          </p>
+          <ErrorState text="Não foi possível carregar os orçamentos." />
         ) : null}
         {quotes.data && quotes.data.items.length === 0 ? (
-          <p className="p-5 text-sm text-muted">Nenhum orçamento encontrado.</p>
+          <EmptyState
+            action={
+              <Button onClick={openCreateModal} type="button">
+                <Plus size={17} aria-hidden="true" />
+                Novo orçamento
+              </Button>
+            }
+            description="Crie sua primeira proposta com produtos, serviços, totais e link público."
+            icon={<FileText size={20} aria-hidden="true" />}
+            title="Nenhum orçamento encontrado"
+          />
         ) : null}
         {quotes.data && quotes.data.items.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-muted">
+          <TableShell>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Código</th>
-                  <th className="px-4 py-3 font-semibold">Cliente</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Total</th>
-                  <th className="px-4 py-3 text-right font-semibold">Ações</th>
+                  <TableHeaderCell>Código</TableHeaderCell>
+                  <TableHeaderCell>Cliente</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Total</TableHeaderCell>
+                  <TableHeaderCell align="right">Ações</TableHeaderCell>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody>
                 {quotes.data.items.map((quote) => (
-                  <tr className="border-t border-border" key={quote.id}>
-                    <td className="px-4 py-3 font-semibold text-ink">{quote.code}</td>
-                    <td className="px-4 py-3 text-muted">{quote.customerName}</td>
-                    <td className="px-4 py-3 text-muted">{statusLabel(quote.status)}</td>
-                    <td className="px-4 py-3 text-muted">{currency(quote.total)}</td>
-                    <td className="px-4 py-3">
+                  <TableRow key={quote.id}>
+                    <TableCell primary>{quote.code}</TableCell>
+                    <TableCell>{quote.customerName}</TableCell>
+                    <TableCell>
+                      <Badge tone={statusTone(quote.status)}>{statusLabel(quote.status)}</Badge>
+                    </TableCell>
+                    <TableCell>{currency(quote.total)}</TableCell>
+                    <TableCell align="right">
                       <div className="flex justify-end gap-2">
                         <Link
                           aria-label={`Ver ${quote.code}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-900"
                           href={`/quotes/${quote.id}`}
                         >
                           <Eye size={16} aria-hidden="true" />
                         </Link>
-                        <button
+                        <ActionButton
                           aria-label={`Editar ${quote.code}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
                           onClick={() => openEditModal(quote)}
                           type="button"
                         >
                           <Pencil size={16} aria-hidden="true" />
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
                           aria-label={`Cancelar ${quote.code}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
                           disabled={removeQuote.isPending}
-                          onClick={() => removeQuote.mutate(quote.id)}
+                          onClick={() => confirmCancel(quote)}
                           type="button"
+                          variant="danger"
                         >
                           <Trash2 size={16} aria-hidden="true" />
-                        </button>
+                        </ActionButton>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </TableShell>
         ) : null}
-      </section>
+      </Card>
       <Modal
         description="Crie ou ajuste o orçamento sem sair da listagem."
         isOpen={isOpen}
@@ -202,6 +231,18 @@ export function statusLabel(status: QuoteStatus) {
     CANCELLED: "Cancelado",
   };
   return labels[status];
+}
+
+export function statusTone(status: QuoteStatus) {
+  const tones = {
+    APPROVED: "success",
+    CANCELLED: "slate",
+    DRAFT: "info",
+    EXPIRED: "warning",
+    REJECTED: "danger",
+    SENT: "warning",
+  } as const;
+  return tones[status];
 }
 
 export function currency(value: number) {
