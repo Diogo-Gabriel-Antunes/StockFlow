@@ -2,12 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Modal } from "@/components/ui/Modal";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { deleteCustomer, listCustomers } from "./customer-service";
+import { CustomerForm } from "./customer-form";
+import type { Customer } from "./types";
+
+type ModalMode = "create" | "edit";
 
 export function CustomersPage() {
   const router = useRouter();
@@ -17,6 +21,9 @@ export function CustomersPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<ModalMode>("create");
+  const [selectedItem, setSelectedItem] = useState<Customer | undefined>();
 
   const customers = useQuery({
     queryKey: ["customers", submittedSearch, token],
@@ -41,6 +48,29 @@ export function CustomersPage() {
     setSubmittedSearch(search.trim());
   }
 
+  function openCreateModal() {
+    setMode("create");
+    setSelectedItem(undefined);
+    setIsOpen(true);
+  }
+
+  function openEditModal(customer: Customer) {
+    setMode("edit");
+    setSelectedItem(customer);
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+    setSelectedItem(undefined);
+    setMode("create");
+  }
+
+  function handleSaved() {
+    closeModal();
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
+  }
+
   return (
     <AppLayout>
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -51,13 +81,14 @@ export function CustomersPage() {
               Consulte e mantenha os contatos usados nos orçamentos.
             </p>
           </div>
-          <Link
+          <button
             className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-            href="/customers/new"
+            onClick={openCreateModal}
+            type="button"
           >
             <Plus size={17} aria-hidden="true" />
             Novo cliente
-          </Link>
+          </button>
         </header>
 
         <form className="mb-4 flex gap-2" onSubmit={submitSearch}>
@@ -125,13 +156,14 @@ export function CustomersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
-                          <Link
+                          <button
                             aria-label={`Editar ${customer.name}`}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
-                            href={`/customers/${customer.id}`}
+                            onClick={() => openEditModal(customer)}
+                            type="button"
                           >
                             <Pencil size={16} aria-hidden="true" />
-                          </Link>
+                          </button>
                           <button
                             aria-label={`Excluir ${customer.name}`}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
@@ -150,6 +182,19 @@ export function CustomersPage() {
             </div>
           ) : null}
         </section>
+        <Modal
+          description="Preencha os dados do cliente sem sair da listagem."
+          isOpen={isOpen}
+          onClose={closeModal}
+          title={mode === "create" ? "Novo cliente" : "Editar cliente"}
+        >
+          <CustomerForm
+            customer={selectedItem}
+            key={selectedItem?.id ?? "new-customer"}
+            onCancel={closeModal}
+            onSaved={handleSaved}
+          />
+        </Modal>
     </AppLayout>
   );
 }

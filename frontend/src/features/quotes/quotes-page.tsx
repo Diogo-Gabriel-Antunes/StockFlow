@@ -1,14 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Modal } from "@/components/ui/Modal";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { deleteQuote, listQuotes } from "./quote-service";
-import type { QuoteStatus } from "./types";
+import { QuoteForm } from "./quote-form";
+import type { Quote, QuoteStatus } from "./types";
+
+type ModalMode = "create" | "edit";
 
 const statusOptions: Array<{ value: QuoteStatus | ""; label: string }> = [
   { value: "", label: "Todos" },
@@ -26,6 +30,9 @@ export function QuotesPage() {
     typeof window === "undefined" ? null : getToken(),
   );
   const [status, setStatus] = useState<QuoteStatus | "">("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<ModalMode>("create");
+  const [selectedItem, setSelectedItem] = useState<Quote | undefined>();
 
   const quotes = useQuery({
     queryKey: ["quotes", status, token],
@@ -45,6 +52,29 @@ export function QuotesPage() {
     }
   }, [router, token]);
 
+  function openCreateModal() {
+    setMode("create");
+    setSelectedItem(undefined);
+    setIsOpen(true);
+  }
+
+  function openEditModal(quote: Quote) {
+    setMode("edit");
+    setSelectedItem(quote);
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+    setSelectedItem(undefined);
+    setMode("create");
+  }
+
+  function handleSaved() {
+    closeModal();
+    queryClient.invalidateQueries({ queryKey: ["quotes"] });
+  }
+
   return (
     <AppLayout>
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -55,13 +85,14 @@ export function QuotesPage() {
             Crie propostas com produtos, serviços e cálculo automático de totais.
           </p>
         </div>
-        <Link
+        <button
           className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-          href="/quotes/new"
+          onClick={openCreateModal}
+          type="button"
         >
           <Plus size={17} aria-hidden="true" />
           Novo orçamento
-        </Link>
+        </button>
       </header>
 
       <div className="mb-4 flex max-w-xs items-center gap-2">
@@ -118,6 +149,14 @@ export function QuotesPage() {
                           <Eye size={16} aria-hidden="true" />
                         </Link>
                         <button
+                          aria-label={`Editar ${quote.code}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
+                          onClick={() => openEditModal(quote)}
+                          type="button"
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                        </button>
+                        <button
                           aria-label={`Cancelar ${quote.code}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
                           disabled={removeQuote.isPending}
@@ -135,6 +174,20 @@ export function QuotesPage() {
           </div>
         ) : null}
       </section>
+      <Modal
+        description="Crie ou ajuste o orçamento sem sair da listagem."
+        isOpen={isOpen}
+        onClose={closeModal}
+        size="wide"
+        title={mode === "create" ? "Novo orçamento" : "Editar orçamento"}
+      >
+        <QuoteForm
+          key={selectedItem?.id ?? "new-quote"}
+          onCancel={closeModal}
+          onSaved={handleSaved}
+          quote={selectedItem}
+        />
+      </Modal>
     </AppLayout>
   );
 }

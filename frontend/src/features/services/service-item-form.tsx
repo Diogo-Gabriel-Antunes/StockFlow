@@ -12,6 +12,8 @@ import type { ServiceItem, ServiceItemFormInput, ServiceItemInput } from "./type
 
 type ServiceItemFormProps = {
   serviceItem?: ServiceItem;
+  onCancel?: () => void;
+  onSaved?: (serviceItem: ServiceItem) => void;
 };
 
 const emptyValues: ServiceItemFormInput = {
@@ -21,7 +23,7 @@ const emptyValues: ServiceItemFormInput = {
   estimatedCost: "0",
 };
 
-export function ServiceItemForm({ serviceItem }: ServiceItemFormProps) {
+export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -59,13 +61,15 @@ export function ServiceItemForm({ serviceItem }: ServiceItemFormProps) {
 
     try {
       const payload = normalizeInput(parsed.data);
-      if (serviceItem) {
-        await updateServiceItem(token, serviceItem.id, payload);
+      const savedServiceItem = serviceItem
+        ? await updateServiceItem(token, serviceItem.id, payload)
+        : await createServiceItem(token, payload);
+      if (onSaved) {
+        onSaved(savedServiceItem);
       } else {
-        await createServiceItem(token, payload);
+        router.push("/services");
+        router.refresh();
       }
-      router.push("/services");
-      router.refresh();
     } catch {
       setFormError("Não foi possível salvar o serviço.");
     }
@@ -108,12 +112,22 @@ export function ServiceItemForm({ serviceItem }: ServiceItemFormProps) {
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          href="/services"
-        >
-          Cancelar
-        </Link>
+        {onCancel ? (
+          <button
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            href="/services"
+          >
+            Cancelar
+          </Link>
+        )}
         <button
           className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}

@@ -329,31 +329,44 @@ Dar visão gerencial básica.
 
 ---
 
-## Fase 10 — Deploy em VPS
+## Fase 10 — Deploy em Oracle Cloud Always Free por IP
 
 ### Objetivo
 
-Colocar o MVP online para demonstração e venda.
+Colocar o MVP online para demonstração em uma VPS Ubuntu da Oracle Cloud Always Free, usando apenas o IP público.
+
+Nesta fase, não exigir domínio e não configurar Let's Encrypt. HTTPS fica para uma etapa futura, quando houver domínio.
 
 ### Entregas
 
-- Configuração de produção.
-- Nginx ou Traefik.
-- HTTPS.
+- `docker-compose.prod.yml`.
+- `.env.production.example`.
+- `DEPLOY_ORACLE.md`.
+- `infra/nginx/stockflow-ip.conf`.
+- `infra/scripts/deploy.sh`.
+- `infra/scripts/backup-db.sh`.
+- Configuração de produção por Docker Compose.
+- Nginx respondendo pelo IP público.
+- Frontend acessível em `http://IP_DA_VPS`.
+- API acessível em `http://IP_DA_VPS/api`.
+- Propostas públicas acessíveis em `http://IP_DA_VPS/public/quotes/{token}`.
 - Banco PostgreSQL persistente.
 - Volumes Docker.
 - Script de backup.
-- Documentação de deploy.
-- Domínio apontado.
+- Documentação de deploy sem domínio.
 
 ### Critério de conclusão
 
-- Sistema acessível em domínio real.
-- API acessível com HTTPS.
+- Sistema acessível pelo IP público da VPS.
+- Nginx expõe somente porta `80` para web.
+- SSH exposto somente pela porta `22`.
+- Backend fica atrás do Nginx, sem publicar porta `8080`.
+- PostgreSQL não é exposto publicamente.
+- Frontend usa URL pública por IP para acessar a API.
 - Banco com volume persistente.
-- Backup funcionando.
+- Backup documentado e com script disponível.
 - Testes automatizados existentes do backend e do frontend continuam passando antes do deploy.
-- Health checks de backend e frontend são validados em ambiente de produção ou staging.
+- Health checks de backend, Postgres e Nginx são validados em ambiente de produção ou staging.
 - Script/configuração de backup possui validação mínima documentada ou automatizada quando possível.
 
 ---

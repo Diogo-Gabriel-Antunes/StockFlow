@@ -18,6 +18,8 @@ import { currency } from "./quotes-page";
 
 type QuoteFormProps = {
   quote?: Quote;
+  onCancel?: () => void;
+  onSaved?: (quote: Quote) => void;
 };
 
 const emptyItem = {
@@ -30,7 +32,7 @@ const emptyItem = {
   discount: "0",
 };
 
-export function QuoteForm({ quote }: QuoteFormProps) {
+export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const [token] = useState<string | null>(() =>
@@ -116,8 +118,12 @@ export function QuoteForm({ quote }: QuoteFormProps) {
       const saved = quote
         ? await updateQuote(token, quote.id, payload)
         : await createQuote(token, payload);
-      router.push(`/quotes/${saved.id}`);
-      router.refresh();
+      if (onSaved) {
+        onSaved(saved);
+      } else {
+        router.push(`/quotes/${saved.id}`);
+        router.refresh();
+      }
     } catch {
       setFormError("Não foi possível salvar o orçamento.");
     }
@@ -272,12 +278,22 @@ export function QuoteForm({ quote }: QuoteFormProps) {
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          href="/quotes"
-        >
-          Cancelar
-        </Link>
+        {onCancel ? (
+          <button
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            href="/quotes"
+          >
+            Cancelar
+          </Link>
+        )}
         <button
           className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}

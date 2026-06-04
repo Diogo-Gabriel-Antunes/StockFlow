@@ -12,6 +12,8 @@ import type { Product, ProductFormInput, ProductInput } from "./types";
 
 type ProductFormProps = {
   product?: Product;
+  onCancel?: () => void;
+  onSaved?: (product: Product) => void;
 };
 
 const emptyValues: ProductFormInput = {
@@ -25,7 +27,7 @@ const emptyValues: ProductFormInput = {
   minimumStock: "0",
 };
 
-export function ProductForm({ product }: ProductFormProps) {
+export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -67,13 +69,15 @@ export function ProductForm({ product }: ProductFormProps) {
 
     try {
       const payload = normalizeInput(parsed.data);
-      if (product) {
-        await updateProduct(token, product.id, payload);
+      const savedProduct = product
+        ? await updateProduct(token, product.id, payload)
+        : await createProduct(token, payload);
+      if (onSaved) {
+        onSaved(savedProduct);
       } else {
-        await createProduct(token, payload);
+        router.push("/products");
+        router.refresh();
       }
-      router.push("/products");
-      router.refresh();
     } catch {
       setFormError("Não foi possível salvar o produto.");
     }
@@ -126,12 +130,22 @@ export function ProductForm({ product }: ProductFormProps) {
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          href="/products"
-        >
-          Cancelar
-        </Link>
+        {onCancel ? (
+          <button
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            href="/products"
+          >
+            Cancelar
+          </Link>
+        )}
         <button
           className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}

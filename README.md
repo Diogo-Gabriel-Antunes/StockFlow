@@ -65,7 +65,8 @@ Criar uma aplicação SaaS multi-tenant onde cada empresa consegue:
 - PostgreSQL
 - VPS Linux
 - Nginx ou Traefik em produção
-- HTTPS com Let's Encrypt em produção
+- Deploy por IP público em produção inicial
+- HTTPS com Let's Encrypt em fase futura, quando houver domínio
 
 ---
 
@@ -128,6 +129,14 @@ Backend:  http://localhost:8080
 Swagger:  http://localhost:8080/q/swagger-ui
 PostgreSQL: localhost:5432
 ```
+
+## Deploy Oracle Cloud por IP
+
+A Fase 10 usa Oracle Cloud Always Free com Ubuntu Server, Docker Compose e acesso somente pelo IP público da VPS.
+
+Nesta fase não é obrigatório configurar domínio, HTTPS ou Let's Encrypt. O Nginx responde em `http://IP_DA_VPS`, encaminha a API por `http://IP_DA_VPS/api` e mantém backend e PostgreSQL internos ao Docker.
+
+Leia [DEPLOY_ORACLE.md](DEPLOY_ORACLE.md) para configurar `.env.production`, firewall, Docker Compose, backup e validação.
 
 Usuário padrão de desenvolvimento criado pelas migrations:
 

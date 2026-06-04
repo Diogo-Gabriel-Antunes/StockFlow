@@ -2,12 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Modal } from "@/components/ui/Modal";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { ServiceItemForm } from "./service-item-form";
 import { deleteServiceItem, listServiceItems } from "./service-item-service";
+import type { ServiceItem } from "./types";
+
+type ModalMode = "create" | "edit";
 
 export function ServicesPage() {
   const router = useRouter();
@@ -17,6 +21,9 @@ export function ServicesPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<ModalMode>("create");
+  const [selectedItem, setSelectedItem] = useState<ServiceItem | undefined>();
 
   const services = useQuery({
     queryKey: ["services", submittedSearch, token],
@@ -41,6 +48,29 @@ export function ServicesPage() {
     setSubmittedSearch(search.trim());
   }
 
+  function openCreateModal() {
+    setMode("create");
+    setSelectedItem(undefined);
+    setIsOpen(true);
+  }
+
+  function openEditModal(serviceItem: ServiceItem) {
+    setMode("edit");
+    setSelectedItem(serviceItem);
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+    setSelectedItem(undefined);
+    setMode("create");
+  }
+
+  function handleSaved() {
+    closeModal();
+    queryClient.invalidateQueries({ queryKey: ["services"] });
+  }
+
   return (
     <AppLayout>
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -51,13 +81,14 @@ export function ServicesPage() {
             Cadastre itens sem estoque para usar nos orçamentos.
           </p>
         </div>
-        <Link
+        <button
           className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-          href="/services/new"
+          onClick={openCreateModal}
+          type="button"
         >
           <Plus size={17} aria-hidden="true" />
           Novo serviço
-        </Link>
+        </button>
       </header>
 
       <form className="mb-4 flex gap-2" onSubmit={submitSearch}>
@@ -112,13 +143,14 @@ export function ServicesPage() {
                     <td className="px-4 py-3 text-muted">{formatMoney(service.estimatedCost)}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Link
+                        <button
                           aria-label={`Editar ${service.name}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
-                          href={`/services/${service.id}`}
+                          onClick={() => openEditModal(service)}
+                          type="button"
                         >
                           <Pencil size={16} aria-hidden="true" />
-                        </Link>
+                        </button>
                         <button
                           aria-label={`Excluir ${service.name}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
@@ -137,6 +169,19 @@ export function ServicesPage() {
           </div>
         ) : null}
       </section>
+      <Modal
+        description="Cadastre ou ajuste serviços usados nos orçamentos."
+        isOpen={isOpen}
+        onClose={closeModal}
+        title={mode === "create" ? "Novo serviço" : "Editar serviço"}
+      >
+        <ServiceItemForm
+          key={selectedItem?.id ?? "new-service"}
+          onCancel={closeModal}
+          onSaved={handleSaved}
+          serviceItem={selectedItem}
+        />
+      </Modal>
     </AppLayout>
   );
 }

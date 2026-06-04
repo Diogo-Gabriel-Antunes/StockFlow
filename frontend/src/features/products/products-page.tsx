@@ -2,12 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Modal } from "@/components/ui/Modal";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
 import { deleteProduct, listProducts } from "./product-service";
+import { ProductForm } from "./product-form";
+import type { Product } from "./types";
+
+type ModalMode = "create" | "edit";
 
 export function ProductsPage() {
   const router = useRouter();
@@ -17,6 +21,9 @@ export function ProductsPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<ModalMode>("create");
+  const [selectedItem, setSelectedItem] = useState<Product | undefined>();
 
   const products = useQuery({
     queryKey: ["products", submittedSearch, token],
@@ -41,6 +48,29 @@ export function ProductsPage() {
     setSubmittedSearch(search.trim());
   }
 
+  function openCreateModal() {
+    setMode("create");
+    setSelectedItem(undefined);
+    setIsOpen(true);
+  }
+
+  function openEditModal(product: Product) {
+    setMode("edit");
+    setSelectedItem(product);
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+    setSelectedItem(undefined);
+    setMode("create");
+  }
+
+  function handleSaved() {
+    closeModal();
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+  }
+
   return (
     <AppLayout>
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -51,13 +81,14 @@ export function ProductsPage() {
             Organize itens físicos, preços e estoque mínimo.
           </p>
         </div>
-        <Link
+        <button
           className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800"
-          href="/products/new"
+          onClick={openCreateModal}
+          type="button"
         >
           <Plus size={17} aria-hidden="true" />
           Novo produto
-        </Link>
+        </button>
       </header>
 
       <form className="mb-4 flex gap-2" onSubmit={submitSearch}>
@@ -114,13 +145,14 @@ export function ProductsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Link
+                        <button
                           aria-label={`Editar ${product.name}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50"
-                          href={`/products/${product.id}`}
+                          onClick={() => openEditModal(product)}
+                          type="button"
                         >
                           <Pencil size={16} aria-hidden="true" />
-                        </Link>
+                        </button>
                         <button
                           aria-label={`Excluir ${product.name}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-red-700 transition hover:bg-red-50"
@@ -139,6 +171,19 @@ export function ProductsPage() {
           </div>
         ) : null}
       </section>
+      <Modal
+        description="Atualize preços, estoque inicial e dados do produto sem sair da listagem."
+        isOpen={isOpen}
+        onClose={closeModal}
+        title={mode === "create" ? "Novo produto" : "Editar produto"}
+      >
+        <ProductForm
+          key={selectedItem?.id ?? "new-product"}
+          onCancel={closeModal}
+          onSaved={handleSaved}
+          product={selectedItem}
+        />
+      </Modal>
     </AppLayout>
   );
 }

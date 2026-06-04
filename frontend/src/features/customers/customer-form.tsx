@@ -12,6 +12,8 @@ import type { Customer, CustomerInput } from "./types";
 
 type CustomerFormProps = {
   customer?: Customer;
+  onCancel?: () => void;
+  onSaved?: (customer: Customer) => void;
 };
 
 const emptyValues: CustomerInput = {
@@ -26,7 +28,7 @@ const emptyValues: CustomerInput = {
   notes: "",
 };
 
-export function CustomerForm({ customer }: CustomerFormProps) {
+export function CustomerForm({ customer, onCancel, onSaved }: CustomerFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -68,13 +70,15 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     }
 
     try {
-      if (customer) {
-        await updateCustomer(token, customer.id, normalizeInput(parsed.data));
+      const savedCustomer = customer
+        ? await updateCustomer(token, customer.id, normalizeInput(parsed.data))
+        : await createCustomer(token, normalizeInput(parsed.data));
+      if (onSaved) {
+        onSaved(savedCustomer);
       } else {
-        await createCustomer(token, normalizeInput(parsed.data));
+        router.push("/customers");
+        router.refresh();
       }
-      router.push("/customers");
-      router.refresh();
     } catch {
       setFormError("Não foi possível salvar o cliente.");
     }
@@ -136,12 +140,22 @@ export function CustomerForm({ customer }: CustomerFormProps) {
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
-          href="/customers"
-        >
-          Cancelar
-        </Link>
+        {onCancel ? (
+          <button
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50"
+            href="/customers"
+          >
+            Cancelar
+          </Link>
+        )}
         <button
           className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-white shadow-subtle transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}
