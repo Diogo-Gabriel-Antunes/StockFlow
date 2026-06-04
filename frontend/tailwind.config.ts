@@ -9,16 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        border: "#d7dde5",
-        ink: "#17202a",
-        muted: "#64748b",
-        panel: "#ffffff",
-        page: "#f6f8fb",
-        primary: "#0f766e",
-        accent: "#b45309",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        panel: "rgb(var(--color-panel) / <alpha-value>)",
+        page: "rgb(var(--color-page) / <alpha-value>)",
+        primary: "rgb(var(--color-primary) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
       },
       boxShadow: {
-        subtle: "0 1px 2px rgba(15, 23, 42, 0.08)",
+        subtle: "var(--shadow-subtle)",
       },
     },
   },

@@ -4,6 +4,26 @@
 
 :root {
   color-scheme: light;
+  --color-border: 215 221 229;
+  --color-ink: 23 32 42;
+  --color-muted: 100 116 139;
+  --color-panel: 255 255 255;
+  --color-page: 246 248 251;
+  --color-primary: 15 118 110;
+  --color-accent: 180 83 9;
+  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --color-border: 51 65 85;
+  --color-ink: 226 232 240;
+  --color-muted: 148 163 184;
+  --color-panel: 15 23 42;
+  --color-page: 2 6 23;
+  --color-primary: 45 212 191;
+  --color-accent: 251 191 36;
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 * {
@@ -17,12 +37,41 @@ body {
 
 body {
   margin: 0;
-  background: #f6f8fb;
-  color: #17202a;
+  background: rgb(var(--color-page));
+  color: rgb(var(--color-ink));
   font-family: Arial, Helvetica, sans-serif;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.dark .bg-white {
+  background-color: rgb(15 23 42);
+}
+
+.dark .bg-slate-50 {
+  background-color: rgb(30 41 59);
+}
+
+.dark .text-slate-600,
+.dark .text-slate-400 {
+  color: rgb(var(--color-muted));
+}
+
+.dark .hover\:bg-slate-50:hover {
+  background-color: rgb(30 41 59);
+}
+
+.dark .bg-teal-50 {
+  background-color: rgb(19 78 74);
+}
+
+.dark .focus\:ring-teal-100:focus {
+  --tw-ring-color: rgb(20 184 166 / 0.24);
+}
+
+.dark .border-teal-200 {
+  border-color: rgb(20 184 166 / 0.45);
 }

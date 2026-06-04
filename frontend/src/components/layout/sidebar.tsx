@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 const navigationItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -92,6 +93,10 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="mt-auto border-t border-border px-2 pt-4">
+          <ThemeToggle />
+        </div>
       </aside>
     </>
   );
