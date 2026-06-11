@@ -12,43 +12,74 @@ import java.util.UUID;
 @ApplicationScoped
 public class ServiceItemRepository implements PanacheRepositoryBase<ServiceItemEntity, UUID> {
 
-    public List<ServiceItemEntity> listActiveByCompany(UUID companyId, String search, int page, int size) {
-        return find(query(search), sort(), parameters(companyId, search))
+    public List<ServiceItemEntity> listByCompany(
+            UUID companyId,
+            String search,
+            Boolean active,
+            String sort,
+            String direction,
+            int page,
+            int size
+    ) {
+        return find(query(search, active), sort(sort, direction), parameters(companyId, search, active))
                 .page(Page.of(page, size))
                 .list();
     }
 
+    public long countByCompany(UUID companyId, String search, Boolean active) {
+        return count(query(search, active), parameters(companyId, search, active));
+    }
+
+    public List<ServiceItemEntity> listActiveByCompany(UUID companyId, String search, int page, int size) {
+        return listByCompany(companyId, search, true, "name", "asc", page, size);
+    }
+
     public long countActiveByCompany(UUID companyId, String search) {
-        return count(query(search), parameters(companyId, search));
+        return countByCompany(companyId, search, true);
     }
 
     public Optional<ServiceItemEntity> findActiveByCompanyAndId(UUID companyId, UUID id) {
         return find("company.id = ?1 and id = ?2 and active = true", companyId, id).firstResultOptional();
     }
 
-    private String query(String search) {
-        if (search == null || search.isBlank()) {
-            return "company.id = :companyId and active = true";
+    private String query(String search, Boolean active) {
+        StringBuilder query = new StringBuilder("company.id = :companyId");
+        if (active != null) {
+            query.append(" and active = :active");
         }
-        return """
-                company.id = :companyId
-                and active = true
-                and (
+        if (search != null && !search.isBlank()) {
+            query.append("""
+                 and (
                     lower(name) like :search
                     or lower(coalesce(description, '')) like :search
                 )
-                """;
+                """);
+        }
+        return query.toString();
     }
 
-    private Parameters parameters(UUID companyId, String search) {
+    private Parameters parameters(UUID companyId, String search, Boolean active) {
         Parameters parameters = Parameters.with("companyId", companyId);
+        if (active != null) {
+            parameters.and("active", active);
+        }
         if (search != null && !search.isBlank()) {
             parameters.and("search", "%" + search.trim().toLowerCase() + "%");
         }
         return parameters;
     }
 
-    private Sort sort() {
-        return Sort.by("name").ascending().and("createdAt").descending();
+    private Sort sort(String sort, String direction) {
+        String field = switch (sort == null ? "" : sort) {
+            case "createdAt" -> "createdAt";
+            case "defaultPrice" -> "defaultPrice";
+            default -> "name";
+        };
+        Sort.Direction safeDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.Descending : Sort.Direction.Ascending;
+        Sort safeSort = Sort.by(field, safeDirection);
+        if (!"name".equals(field)) {
+            safeSort = safeSort.and("name", Sort.Direction.Ascending);
+        }
+        return safeSort;
     }
 }

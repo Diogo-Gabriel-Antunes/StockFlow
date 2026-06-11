@@ -1,11 +1,5 @@
-import { PrivatePlaceholder } from "@/components/layout/private-placeholder";
+import { CompanySettingsPage } from "@/features/company-settings/company-settings-page";
 
-export default function CompanySettingsPage() {
-  return (
-    <PrivatePlaceholder
-      description="Dados da empresa e preferências serão organizados em configurações."
-      eyebrow="Configurações"
-      title="Configurações"
-    />
-  );
+export default function CompanySettingsRoute() {
+  return <CompanySettingsPage />;
 }

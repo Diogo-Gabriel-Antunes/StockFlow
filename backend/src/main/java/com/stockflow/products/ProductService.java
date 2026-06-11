@@ -12,7 +12,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class ProductService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Inject
@@ -25,18 +25,30 @@ public class ProductService {
     AuthenticatedTenant authenticatedTenant;
 
     public ProductPageResponse list(String search, Integer page, Integer size) {
+        return list(search, null, null, null, null, page, size);
+    }
+
+    public ProductPageResponse list(
+            String search,
+            Boolean active,
+            Boolean lowStock,
+            String sort,
+            String direction,
+            Integer page,
+            Integer size
+    ) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
         UUID companyId = authenticatedTenant.companyId();
 
         return new ProductPageResponse(
-                productRepository.listActiveByCompany(companyId, search, safePage, safeSize)
+                productRepository.listByCompany(companyId, search, active, lowStock, sort, direction, safePage, safeSize)
                         .stream()
                         .map(ProductResponse::from)
                         .toList(),
                 safePage,
                 safeSize,
-                productRepository.countActiveByCompany(companyId, search)
+                productRepository.countByCompany(companyId, search, active, lowStock)
         );
     }
 
@@ -79,6 +91,8 @@ public class ProductService {
         product.name = request.name().trim();
         product.sku = trimToNull(request.sku());
         product.category = trimToNull(request.category());
+        product.barcode = trimToNull(request.barcode());
+        product.referenceCode = trimToNull(request.referenceCode());
         product.costPrice = request.costPrice();
         product.salePrice = request.salePrice();
         product.unit = request.unit().trim();

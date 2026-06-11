@@ -1,4 +1,11 @@
-export type QuoteStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+export type QuoteStatus =
+  | "DRAFT"
+  | "SENT"
+  | "CUSTOMER_APPROVED"
+  | "COMPLETED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CANCELLED";
 
 export type QuoteItemType = "PRODUCT" | "SERVICE";
 
@@ -29,6 +36,11 @@ export type Quote = {
   notes: string | null;
   paymentTerms: string | null;
   createdBy: string;
+  customerApprovedAt: string | null;
+  customerRejectedAt: string | null;
+  completedAt: string | null;
+  completedBy: string | null;
+  stockDeducted: boolean;
   createdAt: string;
   updatedAt: string;
   items: QuoteItem[];
@@ -36,9 +48,14 @@ export type Quote = {
 
 export type QuotePage = {
   items: Quote[];
+  content?: Quote[];
   page: number;
   size: number;
   total: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
 };
 
 export type QuoteItemFormInput = {
@@ -89,7 +106,12 @@ export type PublicQuoteLink = {
 
 export type PublicQuote = {
   companyName: string;
+  companyDocument: string | null;
   companyEmail: string | null;
+  companyPhone: string | null;
+  companyWhatsapp: string | null;
+  companyCity: string | null;
+  companyState: string | null;
   customerName: string;
   code: string;
   status: QuoteStatus;
@@ -100,5 +122,10 @@ export type PublicQuote = {
   total: number;
   notes: string | null;
   paymentTerms: string | null;
+  customerApprovedAt: string | null;
+  customerRejectedAt: string | null;
+  completedAt: string | null;
+  completedBy: string | null;
+  stockDeducted: boolean;
   items: QuoteItem[];
 };

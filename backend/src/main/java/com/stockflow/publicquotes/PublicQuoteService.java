@@ -34,6 +34,20 @@ public class PublicQuoteService {
 
     @Transactional
     public PublicQuoteLinkResponse generateLink(QuoteEntity quote) {
+        if (quote.status == QuoteStatus.DRAFT) {
+            quote.status = QuoteStatus.SENT;
+        }
+        PublicQuoteTokenEntity currentToken = publicQuoteTokenRepository
+                .findLatestByQuote(quote.company.id, quote.id)
+                .filter(token -> token.expiresAt.isAfter(OffsetDateTime.now()))
+                .orElse(null);
+        if (currentToken != null) {
+            return new PublicQuoteLinkResponse(
+                    currentToken.token,
+                    publicQuoteBaseUrl + "/" + currentToken.token,
+                    currentToken.expiresAt
+            );
+        }
         PublicQuoteTokenEntity token = new PublicQuoteTokenEntity();
         token.company = quote.company;
         token.quote = quote;
@@ -51,7 +65,7 @@ public class PublicQuoteService {
     public PublicQuoteResponse approve(String token) {
         PublicQuoteTokenEntity publicToken = findToken(token);
         ensureNotExpired(publicToken);
-        quoteApprovalService.approve(publicToken.quote);
+        quoteApprovalService.markCustomerApproved(publicToken.quote);
         return PublicQuoteResponse.from(publicToken);
     }
 
@@ -59,13 +73,18 @@ public class PublicQuoteService {
     public PublicQuoteResponse reject(String token) {
         PublicQuoteTokenEntity publicToken = findToken(token);
         ensureNotExpired(publicToken);
-        if (publicToken.quote.status != QuoteStatus.APPROVED) {
-            publicToken.quote.status = QuoteStatus.REJECTED;
+        if (publicToken.quote.status == QuoteStatus.COMPLETED
+                || publicToken.quote.status == QuoteStatus.CANCELLED
+                || publicToken.quote.status == QuoteStatus.EXPIRED
+                || publicToken.quote.status == QuoteStatus.REJECTED) {
+            throw new BadRequestException("Quote cannot be rejected in current status");
         }
+        publicToken.quote.status = QuoteStatus.REJECTED;
+        publicToken.quote.customerRejectedAt = OffsetDateTime.now();
         return PublicQuoteResponse.from(publicToken);
     }
 
-    public byte[] pdf(String token) {
+    public QuotePdfResponse pdf(String token) {
         return quotePdfService.generate(findToken(token).quote);
     }
 

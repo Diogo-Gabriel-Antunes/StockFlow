@@ -8,6 +8,9 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 @Path("/public/quotes")
 @Produces(MediaType.APPLICATION_JSON)
@@ -37,9 +40,12 @@ public class PublicQuoteResource {
     @GET
     @Path("/{token}/pdf")
     @Produces("application/pdf")
+    @Operation(summary = "Gera o PDF público de uma proposta por token.")
+    @APIResponse(responseCode = "200", description = "PDF público da proposta", content = @Content(mediaType = "application/pdf"))
     public Response pdf(@PathParam("token") String token) {
-        return Response.ok(publicQuoteService.pdf(token), "application/pdf")
-                .header("Content-Disposition", "attachment; filename=\"stockflow-proposta.pdf\"")
+        var pdf = publicQuoteService.pdf(token);
+        return Response.ok(pdf.content(), "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"" + pdf.filename() + "\"")
                 .build();
     }
 }

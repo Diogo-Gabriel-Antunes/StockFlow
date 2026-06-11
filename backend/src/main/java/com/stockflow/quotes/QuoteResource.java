@@ -13,7 +13,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.time.LocalDate;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 @Path("/quotes")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -25,11 +29,17 @@ public class QuoteResource {
 
     @GET
     public QuotePageResponse list(
+            @QueryParam("search") String search,
             @QueryParam("status") QuoteStatus status,
+            @QueryParam("customerId") UUID customerId,
+            @QueryParam("dateFrom") LocalDate dateFrom,
+            @QueryParam("dateTo") LocalDate dateTo,
+            @QueryParam("sort") String sort,
+            @QueryParam("direction") String direction,
             @QueryParam("page") Integer page,
             @QueryParam("size") Integer size
     ) {
-        return quoteService.list(status, page, size);
+        return quoteService.list(search, status, customerId, dateFrom, dateTo, sort, direction, page, size);
     }
 
     @POST
@@ -71,9 +81,27 @@ public class QuoteResource {
     }
 
     @POST
+    @Path("/{id}/mark-customer-approved")
+    public QuoteResponse markCustomerApproved(@PathParam("id") UUID id) {
+        return quoteService.markCustomerApproved(id);
+    }
+
+    @POST
+    @Path("/{id}/complete")
+    public QuoteResponse complete(@PathParam("id") UUID id) {
+        return quoteService.complete(id);
+    }
+
+    @POST
     @Path("/{id}/reject")
     public QuoteResponse reject(@PathParam("id") UUID id) {
         return quoteService.reject(id);
+    }
+
+    @POST
+    @Path("/{id}/cancel")
+    public QuoteResponse cancel(@PathParam("id") UUID id) {
+        return quoteService.cancel(id);
     }
 
     @POST
@@ -85,9 +113,12 @@ public class QuoteResource {
     @GET
     @Path("/{id}/pdf")
     @Produces("application/pdf")
+    @Operation(summary = "Gera o PDF de um orçamento da empresa autenticada.")
+    @APIResponse(responseCode = "200", description = "PDF do orçamento", content = @Content(mediaType = "application/pdf"))
     public Response pdf(@PathParam("id") UUID id) {
-        return Response.ok(quoteService.pdf(id), "application/pdf")
-                .header("Content-Disposition", "attachment; filename=\"stockflow-proposta.pdf\"")
+        var pdf = quoteService.pdf(id);
+        return Response.ok(pdf.content(), "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"" + pdf.filename() + "\"")
                 .build();
     }
 }

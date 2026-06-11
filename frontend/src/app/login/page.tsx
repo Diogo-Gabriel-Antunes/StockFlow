@@ -10,6 +10,7 @@ import { login } from "@/features/auth/auth-service";
 import { storeToken } from "@/features/auth/auth-storage";
 import { loginSchema } from "@/features/auth/schemas";
 import type { LoginInput } from "@/features/auth/types";
+import { appToast } from "@/lib/toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,9 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (window.sessionStorage.getItem("stockflow_session_message")) {
+    const sessionMessage = window.sessionStorage.getItem("stockflow_session_message");
+    if (sessionMessage) {
+      appToast.warning(sessionMessage);
       window.sessionStorage.removeItem("stockflow_session_message");
     }
   }, []);
@@ -50,10 +53,12 @@ export default function LoginPage() {
     try {
       const response = await login(parsed.data);
       storeToken(response.token);
+      appToast.success("Login realizado com sucesso.");
       router.push("/dashboard");
       router.refresh();
     } catch {
       setFormError("E-mail ou senha inválidos.");
+      appToast.error("E-mail ou senha inválidos.");
     }
   }
 

@@ -26,10 +26,12 @@ public class CustomerResource {
     @GET
     public CustomerPageResponse list(
             @QueryParam("search") String search,
+            @QueryParam("sort") String sort,
+            @QueryParam("direction") String direction,
             @QueryParam("page") Integer page,
             @QueryParam("size") Integer size
     ) {
-        return customerService.list(search, page, size);
+        return customerService.list(search, sort, direction, page, size);
     }
 
     @POST

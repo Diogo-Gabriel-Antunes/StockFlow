@@ -7,6 +7,7 @@ import java.util.UUID;
 public record DashboardCustomerResponse(
         UUID id,
         String name,
+        String document,
         String email,
         String phone,
         OffsetDateTime createdAt
@@ -15,6 +16,7 @@ public record DashboardCustomerResponse(
         return new DashboardCustomerResponse(
                 customer.id,
                 customer.name,
+                customer.document,
                 customer.email,
                 customer.phone,
                 customer.createdAt

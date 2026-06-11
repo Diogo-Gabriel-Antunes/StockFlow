@@ -60,8 +60,10 @@ describe("CustomersPage", () => {
         },
       ],
       page: 0,
-      size: 20,
+      size: 10,
       total: 1,
+      totalElements: 1,
+      totalPages: 1,
     });
     vi.mocked(createCustomer).mockResolvedValue({
       id: "customer-2",
@@ -103,7 +105,7 @@ describe("CustomersPage", () => {
 
     expect(await screen.findByText("Cliente Teste")).toBeInTheDocument();
     expect(screen.getByText("cliente@stockflow.test")).toBeInTheDocument();
-    expect(listCustomers).toHaveBeenCalledWith("token-test", { search: "" });
+    expect(listCustomers).toHaveBeenCalledWith("token-test", { page: 0, search: "", size: 10 });
   });
 
   test("creates, edits, cancels and keeps modal open on error", async () => {

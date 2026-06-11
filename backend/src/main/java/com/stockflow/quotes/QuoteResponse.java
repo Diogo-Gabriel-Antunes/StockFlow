@@ -21,6 +21,11 @@ public record QuoteResponse(
         String notes,
         String paymentTerms,
         UUID createdBy,
+        OffsetDateTime customerApprovedAt,
+        OffsetDateTime customerRejectedAt,
+        OffsetDateTime completedAt,
+        UUID completedBy,
+        boolean stockDeducted,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         List<QuoteItemResponse> items
@@ -41,6 +46,11 @@ public record QuoteResponse(
                 quote.notes,
                 quote.paymentTerms,
                 quote.createdBy.id,
+                quote.customerApprovedAt,
+                quote.customerRejectedAt,
+                quote.completedAt,
+                quote.completedBy == null ? null : quote.completedBy.id,
+                quote.stockDeducted,
                 quote.createdAt,
                 quote.updatedAt,
                 quote.items.stream().map(QuoteItemResponse::from).toList()

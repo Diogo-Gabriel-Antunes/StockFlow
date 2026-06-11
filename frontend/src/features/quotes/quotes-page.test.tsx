@@ -67,6 +67,11 @@ describe("QuotesPage", () => {
           notes: null,
           paymentTerms: null,
           createdBy: "user-1",
+          customerApprovedAt: null,
+          customerRejectedAt: null,
+          completedAt: null,
+          completedBy: null,
+          stockDeducted: false,
           createdAt: "2026-06-03T00:00:00Z",
           updatedAt: "2026-06-03T00:00:00Z",
           items: [
@@ -85,8 +90,10 @@ describe("QuotesPage", () => {
         },
       ],
       page: 0,
-      size: 20,
+      size: 10,
       total: 1,
+      totalElements: 1,
+      totalPages: 1,
     });
     vi.mocked(listCustomers).mockResolvedValue({
       items: [
@@ -119,6 +126,8 @@ describe("QuotesPage", () => {
           name: "Produto Teste",
           sku: "P-001",
           category: "Teste",
+          barcode: null,
+          referenceCode: null,
           costPrice: 10,
           salePrice: 100,
           unit: "UN",
@@ -166,6 +175,11 @@ describe("QuotesPage", () => {
       notes: null,
       paymentTerms: null,
       createdBy: "user-1",
+      customerApprovedAt: null,
+      customerRejectedAt: null,
+      completedAt: null,
+      completedBy: null,
+      stockDeducted: false,
       createdAt: "2026-06-03T00:00:00Z",
       updatedAt: "2026-06-03T00:00:00Z",
       items: [],
@@ -185,6 +199,11 @@ describe("QuotesPage", () => {
       notes: null,
       paymentTerms: "Pix",
       createdBy: "user-1",
+      customerApprovedAt: null,
+      customerRejectedAt: null,
+      completedAt: null,
+      completedBy: null,
+      stockDeducted: false,
       createdAt: "2026-06-03T00:00:00Z",
       updatedAt: "2026-06-03T00:00:00Z",
       items: [],
@@ -198,7 +217,14 @@ describe("QuotesPage", () => {
     expect(await screen.findByText("Q-001")).toBeInTheDocument();
     expect(screen.getByText("Cliente Teste")).toBeInTheDocument();
     expect(screen.getAllByText("Rascunho").length).toBeGreaterThan(0);
-    expect(listQuotes).toHaveBeenCalledWith("token-test", { status: "" });
+    expect(listQuotes).toHaveBeenCalledWith("token-test", {
+      dateFrom: "",
+      dateTo: "",
+      page: 0,
+      search: "",
+      size: 10,
+      status: "",
+    });
   });
 
   test("creates, edits, cancels and keeps modal open on error", async () => {

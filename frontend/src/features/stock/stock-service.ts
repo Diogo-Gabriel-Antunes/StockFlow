@@ -8,20 +8,59 @@ import type {
 } from "./types";
 
 type MovementParams = {
+  dateFrom?: string;
+  dateTo?: string;
   productId?: string;
+  search?: string;
+  type?: StockMovement["type"] | "";
   page?: number;
   size?: number;
+  sort?: string;
+  direction?: "asc" | "desc";
 };
 
 export function listStockMovements(token: string, params: MovementParams = {}) {
   const searchParams = new URLSearchParams();
+  if (params.search) {
+    searchParams.set("search", params.search);
+  }
   if (params.productId) {
     searchParams.set("productId", params.productId);
   }
+  if (params.type) {
+    searchParams.set("type", params.type);
+  }
+  if (params.dateFrom) {
+    searchParams.set("dateFrom", params.dateFrom);
+  }
+  if (params.dateTo) {
+    searchParams.set("dateTo", params.dateTo);
+  }
+  if (params.sort) {
+    searchParams.set("sort", params.sort);
+  }
+  if (params.direction) {
+    searchParams.set("direction", params.direction);
+  }
   searchParams.set("page", String(params.page ?? 0));
-  searchParams.set("size", String(params.size ?? 20));
+  searchParams.set("size", String(params.size ?? 10));
 
   return apiRequest<StockMovementPage>(`/stock/movements?${searchParams.toString()}`, { token });
+}
+
+export function listStockMovementsByProduct(
+  token: string,
+  productId: string,
+  params: Omit<MovementParams, "productId"> = {},
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 0));
+  searchParams.set("size", String(params.size ?? 10));
+
+  return apiRequest<StockMovementPage>(
+    `/stock/movements/product/${productId}?${searchParams.toString()}`,
+    { token },
+  );
 }
 
 export function listLowStockProducts(token: string) {

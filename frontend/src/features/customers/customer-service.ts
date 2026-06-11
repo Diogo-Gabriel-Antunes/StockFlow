@@ -5,6 +5,8 @@ type ListParams = {
   search?: string;
   page?: number;
   size?: number;
+  sort?: string;
+  direction?: "asc" | "desc";
 };
 
 export function listCustomers(token: string, params: ListParams = {}) {
@@ -12,8 +14,14 @@ export function listCustomers(token: string, params: ListParams = {}) {
   if (params.search) {
     searchParams.set("search", params.search);
   }
+  if (params.sort) {
+    searchParams.set("sort", params.sort);
+  }
+  if (params.direction) {
+    searchParams.set("direction", params.direction);
+  }
   searchParams.set("page", String(params.page ?? 0));
-  searchParams.set("size", String(params.size ?? 20));
+  searchParams.set("size", String(params.size ?? 10));
 
   return apiRequest<CustomerPage>(`/customers?${searchParams.toString()}`, { token });
 }

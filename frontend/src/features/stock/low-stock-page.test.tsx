@@ -37,10 +37,14 @@ describe("LowStockPage", () => {
         id: "product-1",
         name: "Produto Baixo",
         sku: "LOW-001",
+        barcode: "7891234567890",
+        referenceCode: "REF-001",
         category: "Teste",
+        salePrice: 20,
         unit: "UN",
         stockQuantity: 1,
         minimumStock: 3,
+        stockStatus: "LOW_STOCK",
         suggestedPurchaseQuantity: 2,
       },
     ]);
@@ -51,6 +55,13 @@ describe("LowStockPage", () => {
 
     expect(await screen.findByText("Produto Baixo")).toBeInTheDocument();
     expect(screen.getByText("LOW-001")).toBeInTheDocument();
+    expect(screen.getByText("7891234567890")).toBeInTheDocument();
+    expect(screen.getByText("REF-001")).toBeInTheDocument();
+    expect(screen.getAllByText("Estoque baixo").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /editar/i })).toHaveAttribute(
+      "href",
+      "/products/product-1",
+    );
     expect(listLowStockProducts).toHaveBeenCalledWith("token-test");
   });
 });

@@ -18,6 +18,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -25,7 +26,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class QuoteService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Inject
@@ -59,17 +60,31 @@ public class QuoteService {
     QuotePdfService quotePdfService;
 
     public QuotePageResponse list(QuoteStatus status, Integer page, Integer size) {
+        return list(null, status, null, null, null, null, null, page, size);
+    }
+
+    public QuotePageResponse list(
+            String search,
+            QuoteStatus status,
+            UUID customerId,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            String sort,
+            String direction,
+            Integer page,
+            Integer size
+    ) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
         UUID companyId = authenticatedTenant.companyId();
         return new QuotePageResponse(
-                quoteRepository.listByCompany(companyId, status, safePage, safeSize)
+                quoteRepository.listByCompany(companyId, search, status, customerId, dateFrom, dateTo, sort, direction, safePage, safeSize)
                         .stream()
                         .map(QuoteResponse::from)
                         .toList(),
                 safePage,
                 safeSize,
-                quoteRepository.countByCompany(companyId, status)
+                quoteRepository.countByCompany(companyId, search, status, customerId, dateFrom, dateTo)
         );
     }
 
@@ -86,6 +101,7 @@ public class QuoteService {
         quote.code = nextCode();
         quote.status = QuoteStatus.DRAFT;
         applyRequest(quote, request);
+        applyCompanyDefaults(quote);
         quoteRepository.persist(quote);
         return QuoteResponse.from(quote);
     }
@@ -93,7 +109,10 @@ public class QuoteService {
     @Transactional
     public QuoteResponse update(UUID id, QuoteRequest request) {
         QuoteEntity quote = findQuote(id);
-        if (quote.status == QuoteStatus.APPROVED || quote.status == QuoteStatus.CANCELLED) {
+        if (quote.status == QuoteStatus.COMPLETED
+                || quote.status == QuoteStatus.CANCELLED
+                || quote.status == QuoteStatus.REJECTED
+                || quote.status == QuoteStatus.EXPIRED) {
             throw new BadRequestException("Only editable quotes can be updated");
         }
         quote.customer = findCustomer(request.customerId());
@@ -103,8 +122,17 @@ public class QuoteService {
 
     @Transactional
     public void delete(UUID id) {
+        cancel(id);
+    }
+
+    @Transactional
+    public QuoteResponse cancel(UUID id) {
         QuoteEntity quote = findQuote(id);
+        if (quote.status == QuoteStatus.COMPLETED) {
+            throw new BadRequestException("Completed quotes cannot be cancelled");
+        }
         quote.status = QuoteStatus.CANCELLED;
+        return QuoteResponse.from(quote);
     }
 
     @Transactional
@@ -113,6 +141,9 @@ public class QuoteService {
         if (quote.items.isEmpty()) {
             throw new BadRequestException("Quote must have at least one item");
         }
+        if (quote.status != QuoteStatus.DRAFT) {
+            throw new BadRequestException("Only draft quotes can be sent");
+        }
         quote.status = QuoteStatus.SENT;
         return QuoteResponse.from(quote);
     }
@@ -120,13 +151,28 @@ public class QuoteService {
     @Transactional
     public QuoteResponse approve(UUID id) {
         QuoteEntity quote = findQuote(id);
-        return QuoteResponse.from(quoteApprovalService.approve(quote));
+        return QuoteResponse.from(quoteApprovalService.markCustomerApproved(quote));
+    }
+
+    @Transactional
+    public QuoteResponse markCustomerApproved(UUID id) {
+        return approve(id);
+    }
+
+    @Transactional
+    public QuoteResponse complete(UUID id) {
+        QuoteEntity quote = findQuote(id);
+        return QuoteResponse.from(quoteApprovalService.complete(quote, findCurrentUser()));
     }
 
     @Transactional
     public QuoteResponse reject(UUID id) {
         QuoteEntity quote = findQuote(id);
+        if (quote.status != QuoteStatus.SENT && quote.status != QuoteStatus.CUSTOMER_APPROVED) {
+            throw new BadRequestException("Quote cannot be rejected in current status");
+        }
         quote.status = QuoteStatus.REJECTED;
+        quote.customerRejectedAt = OffsetDateTime.now();
         return QuoteResponse.from(quote);
     }
 
@@ -135,7 +181,7 @@ public class QuoteService {
         return publicQuoteService.generateLink(findQuote(id));
     }
 
-    public byte[] pdf(UUID id) {
+    public com.stockflow.publicquotes.QuotePdfResponse pdf(UUID id) {
         return quotePdfService.generate(findQuote(id));
     }
 
@@ -154,6 +200,18 @@ public class QuoteService {
         quote.discount = totals.discount();
         quote.shipping = totals.shipping();
         quote.total = totals.total();
+    }
+
+    private void applyCompanyDefaults(QuoteEntity quote) {
+        if (quote.validUntil == null && quote.company.defaultQuoteValidityDays != null) {
+            quote.validUntil = LocalDate.now().plusDays(quote.company.defaultQuoteValidityDays);
+        }
+        if (quote.notes == null) {
+            quote.notes = trimToNull(quote.company.defaultQuoteNotes);
+        }
+        if (quote.paymentTerms == null) {
+            quote.paymentTerms = trimToNull(quote.company.defaultPaymentTerms);
+        }
     }
 
     private QuoteItemEntity buildItem(QuoteEntity quote, QuoteItemRequest request) {

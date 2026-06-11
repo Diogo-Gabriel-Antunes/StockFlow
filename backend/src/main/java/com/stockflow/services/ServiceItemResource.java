@@ -26,10 +26,13 @@ public class ServiceItemResource {
     @GET
     public ServiceItemPageResponse list(
             @QueryParam("search") String search,
+            @QueryParam("active") Boolean active,
+            @QueryParam("sort") String sort,
+            @QueryParam("direction") String direction,
             @QueryParam("page") Integer page,
             @QueryParam("size") Integer size
     ) {
-        return serviceItemService.list(search, page, size);
+        return serviceItemService.list(search, active, sort, direction, page, size);
     }
 
     @POST

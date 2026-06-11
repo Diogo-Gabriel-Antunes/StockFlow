@@ -8,7 +8,7 @@ vi.mock("./quote-service", () => ({
   getPublicQuote: vi.fn(),
   approvePublicQuote: vi.fn(),
   rejectPublicQuote: vi.fn(),
-  publicQuotePdfUrl: (token: string) => `http://localhost:8080/public/quotes/${token}/pdf`,
+  publicQuotePdfUrl: (token: string) => `/api/public/quotes/${token}/pdf`,
 }));
 
 function renderWithQueryClient() {
@@ -27,7 +27,12 @@ describe("PublicQuotePage", () => {
     vi.clearAllMocks();
     const quote = {
       companyName: "StockFlow Demo",
+      companyDocument: "12.345.678/0001-90",
       companyEmail: "admin@stockflow.local",
+      companyPhone: "(47) 3333-3333",
+      companyWhatsapp: "(47) 99999-9999",
+      companyCity: "Joinville",
+      companyState: "SC",
       customerName: "Cliente Teste",
       code: "Q-001",
       status: "SENT" as const,
@@ -38,6 +43,11 @@ describe("PublicQuotePage", () => {
       total: 95,
       notes: "Observacao",
       paymentTerms: "Pix",
+      customerApprovedAt: null,
+      customerRejectedAt: null,
+      completedAt: null,
+      completedBy: null,
+      stockDeducted: false,
       items: [
         {
           id: "item-1",
@@ -53,7 +63,7 @@ describe("PublicQuotePage", () => {
       ],
     };
     vi.mocked(getPublicQuote).mockResolvedValue(quote);
-    vi.mocked(approvePublicQuote).mockResolvedValue({ ...quote, status: "APPROVED" });
+    vi.mocked(approvePublicQuote).mockResolvedValue({ ...quote, status: "CUSTOMER_APPROVED" });
     vi.mocked(rejectPublicQuote).mockResolvedValue({ ...quote, status: "REJECTED" });
   });
 
@@ -61,7 +71,13 @@ describe("PublicQuotePage", () => {
     renderWithQueryClient();
 
     expect(await screen.findByText("Proposta Q-001")).toBeInTheDocument();
+    expect(screen.getByText("12.345.678/0001-90")).toBeInTheDocument();
+    expect(screen.getByText("Joinville/SC")).toBeInTheDocument();
     expect(screen.getByText("Produto Teste")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Baixar PDF" })).toHaveAttribute(
+      "href",
+      "/api/public/quotes/public-token/pdf",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Aprovar proposta" }));
 

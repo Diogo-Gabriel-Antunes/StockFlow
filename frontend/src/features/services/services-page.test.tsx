@@ -55,8 +55,10 @@ describe("ServicesPage", () => {
         },
       ],
       page: 0,
-      size: 20,
+      size: 10,
       total: 1,
+      totalElements: 1,
+      totalPages: 1,
     });
     vi.mocked(createServiceItem).mockResolvedValue({
       id: "service-2",
@@ -88,7 +90,12 @@ describe("ServicesPage", () => {
 
     expect(await screen.findByText("Banho e Tosa")).toBeInTheDocument();
     expect(screen.getByText("Servico completo")).toBeInTheDocument();
-    expect(listServiceItems).toHaveBeenCalledWith("token-test", { search: "" });
+    expect(listServiceItems).toHaveBeenCalledWith("token-test", {
+      active: true,
+      page: 0,
+      search: "",
+      size: 10,
+    });
   });
 
   test("creates, edits, cancels and keeps modal open on error", async () => {

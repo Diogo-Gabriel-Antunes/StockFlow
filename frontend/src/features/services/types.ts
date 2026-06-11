@@ -26,7 +26,12 @@ export type ServiceItemInput = {
 
 export type ServiceItemPage = {
   items: ServiceItem[];
+  content?: ServiceItem[];
   page: number;
   size: number;
   total: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
 };

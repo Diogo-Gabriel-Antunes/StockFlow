@@ -1,359 +1,482 @@
 # ARCHITECTURE.md — StockFlow
 
-## 1. Visão arquitetural
+## Visao geral
 
-StockFlow será um SaaS multi-tenant com frontend web, backend API, banco PostgreSQL e execução via Docker Compose em uma VPS.
+StockFlow e uma aplicacao SaaS multi-tenant composta por:
 
-Arquitetura inicial:
+- Backend Quarkus/Java 21.
+- Frontend Next.js/React/TypeScript.
+- Banco PostgreSQL.
+- Migrations Flyway.
+- Nginx como proxy reverso.
+- Docker Compose para ambiente local e producao por IP.
 
-```txt
-Usuário
-  ↓
-Frontend Next.js
-  ↓
-Backend Quarkus REST API
-  ↓
-PostgreSQL
-```
-
-Em produção:
-
-```txt
-Internet
-  ↓
-Nginx / Traefik
-  ↓
-Frontend Container
-  ↓
-Backend Container
-  ↓
-PostgreSQL Container ou Banco Gerenciado
-```
-
----
-
-## 2. Princípios arquiteturais
-
-- Simplicidade antes de sofisticação.
-- MVP vendável antes de ERP completo.
-- Multi-tenant por coluna `company_id`.
-- API REST bem organizada.
-- Banco relacional como fonte principal da verdade.
-- Isolamento de dados por empresa em todas as consultas.
-- Deploy simples em VPS com Docker Compose.
-- Evolução futura para cloud ou serviços gerenciados, sem travar o MVP.
-
----
-
-## 3. Multi-tenant
-
-O modelo inicial será multi-tenant por coluna.
-
-Quase todas as tabelas operacionais devem possuir `company_id`.
-
-Exemplos:
-
-```txt
-customers.company_id
-products.company_id
-stock_movements.company_id
-quotes.company_id
-quote_items.company_id ou herdado via quote
-```
-
-### Regra obrigatória
-
-Toda consulta de dados operacionais deve filtrar pelo `company_id` do usuário autenticado.
-
-Exemplo conceitual:
-
-```sql
-SELECT * FROM products
-WHERE company_id = :authenticatedCompanyId;
-```
-
-### Não fazer no MVP
-
-- Não criar um banco por empresa.
-- Não criar schema separado por empresa.
-- Não permitir seleção manual de `company_id` pelo frontend.
-- Não confiar em `company_id` enviado no body da requisição.
-
-O backend deve derivar a empresa a partir do usuário autenticado.
-
----
-
-## 4. Backend
-
-### Tecnologia
-
-- Quarkus
-- Java 21
-- PostgreSQL
-- Hibernate ORM com Panache
-- RESTEasy Reactive
-- SmallRye JWT
-- Flyway
-- Bean Validation
-- SmallRye OpenAPI
-- JUnit 5
-- RestAssured
-
-### Organização sugerida
-
-```txt
-backend/src/main/java/com/stockflow/
-├── auth/
-├── companies/
-├── users/
-├── customers/
-├── products/
-├── stock/
-├── quotes/
-├── publicquotes/
-├── dashboard/
-├── shared/
-│   ├── config/
-│   ├── exception/
-│   ├── security/
-│   └── pagination/
-└── audit/
-```
-
-### Camadas recomendadas
-
-Cada módulo deve seguir, quando fizer sentido:
-
-```txt
-Resource / Controller
-  ↓
-Service
-  ↓
-Repository
-  ↓
-Entity
-```
-
-Exemplo:
-
-```txt
-ProductResource
-ProductService
-ProductRepository
-ProductEntity
-ProductCreateRequest
-ProductUpdateRequest
-ProductResponse
-```
-
----
-
-## 5. Frontend
-
-### Tecnologia
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- TanStack Query
-- React Hook Form
-- Zod
-
-### Organização sugerida
-
-```txt
-frontend/src/
-├── app/
-│   ├── login/
-│   ├── dashboard/
-│   ├── customers/
-│   ├── products/
-│   ├── stock/
-│   ├── quotes/
-│   └── public/quotes/[token]/
-├── components/
-│   ├── ui/
-│   ├── layout/
-│   └── forms/
-├── features/
-│   ├── auth/
-│   ├── customers/
-│   ├── products/
-│   ├── stock/
-│   ├── quotes/
-│   └── dashboard/
-├── lib/
-├── services/
-└── types/
-```
-
-### Regra para o Codex
-
-Não colocar toda lógica dentro das páginas. Criar services, hooks e componentes reutilizáveis.
-
-### Testes frontend
-
-- Usar Vitest como test runner.
-- Usar React Testing Library para componentes, páginas simples e interações.
-- Criar testes básicos para componentes reutilizáveis, hooks e fluxos de formulário quando forem introduzidos.
-- Mockar chamadas HTTP nos testes de frontend.
-- Cada módulo novo deve ter pelo menos testes mínimos para os componentes/hooks principais entregues na fase.
-
----
-
-## 6. Testes
-
-Toda fase implementada deve vir acompanhada de testes automatizados proporcionais ao escopo.
+## Stack atual
 
 ### Backend
 
-- Usar JUnit 5 para testes unitários e de integração.
-- Usar RestAssured para endpoints REST.
-- Criar testes de service quando houver regra de negócio relevante fora do Resource.
-- Cobrir validações, respostas HTTP principais, autenticação/autorização e isolamento por `company_id` quando o módulo envolver dados multi-tenant.
-- Testes não devem depender de dados de outra empresa ou de estado manual do banco.
+- Java 21.
+- Quarkus.
+- Jakarta REST.
+- Hibernate ORM com Panache.
+- Flyway.
+- PostgreSQL em runtime.
+- H2 nos testes.
+- JUnit 5 e RestAssured.
+- SmallRye OpenAPI/Swagger UI.
+- Health checks Quarkus.
+- OpenPDF para geracao de PDFs de proposta.
 
 ### Frontend
 
-- Usar Vitest e React Testing Library.
-- Testar componentes reutilizáveis, hooks e formulários criados em cada fase.
-- Cobrir estados básicos de carregamento, erro e sucesso quando existirem.
-- Mockar serviços HTTP e dependências externas.
+- Next.js App Router.
+- React.
+- TypeScript.
+- Tailwind CSS.
+- TanStack Query.
+- React Hook Form e Zod.
+- Vitest e React Testing Library.
+- `sonner` para toast.
+- Componentes UI locais.
 
-### Critério arquitetural obrigatório
+### Infra
 
-Antes de declarar qualquer fase como concluída, os comandos de teste do backend e do frontend devem ser executados. Falhas devem ser corrigidas dentro da própria fase.
+- Docker Compose local.
+- Docker Compose de producao.
+- Nginx.
+- PostgreSQL com volume persistente.
+- Scripts de deploy e backup em `infra/scripts`.
 
----
+## Estrutura backend
 
-## 7. Banco de dados
+Pacotes principais em `backend/src/main/java/com/stockflow`:
 
-### Entidades principais
+- `auth`: cadastro, login, `/auth/me`.
+- `companies`: dados da empresa atual e configuracoes comerciais.
+- `customers`: clientes.
+- `products`: produtos.
+- `services`: servicos.
+- `stock`: estoque, movimentacoes e estoque baixo.
+- `quotes`: orcamentos e regras internas.
+- `publicquotes`: token publico, proposta publica e PDF.
+- `replenishments`: reposicao/compras.
+- `dashboard`: indicadores.
+- `shared/security`: JWT, filtro de autenticacao e contexto multi-tenant.
 
-```txt
-companies
-users
-customers
-products
-services
-stock_movements
-quotes
-quote_items
-public_quote_tokens
-plans
-subscriptions
-audit_logs
-```
+## Estrutura frontend
 
----
+Arquivos principais em `frontend/src`:
 
-## 8. Segurança
+- `app`: rotas Next.js.
+- `features/auth`: autenticacao.
+- `features/customers`: clientes.
+- `features/products`: produtos.
+- `features/services`: servicos.
+- `features/quotes`: orcamentos e proposta publica.
+- `features/stock`: estoque, movimentacoes e baixo estoque.
+- `features/replenishments`: reposicao/compras.
+- `features/dashboard`: dashboard.
+- `features/company-settings`: configuracoes comerciais da empresa.
+- `components/layout`: layout autenticado, sidebar, protecao de rotas.
+- `components/ui`: componentes visuais reutilizaveis.
+- `services/http.ts`: cliente HTTP.
+- `lib/toast.ts`: helper de notificacoes.
 
-### Autenticação
+## Banco de dados e migrations
 
-- Login com e-mail e senha.
-- Senha com hash seguro.
-- JWT com expiração.
-- Refresh token pode ficar fora do MVP inicial, se necessário.
+Migrations em `backend/src/main/resources/db/migration`:
 
-### Autorização
+- `V1__initial_schema.sql`
+- `V2__companies_users_auth.sql`
+- `V3__seed_default_owner_user.sql`
+- `V4__customers.sql`
+- `V5__products_services.sql`
+- `V6__stock_movements.sql`
+- `V7__quotes.sql`
+- `V8__public_quote_tokens.sql`
+- `V9__product_codes.sql`
+- `V10__quote_completion_flow.sql`
+- `V11__company_commercial_settings.sql`
 
-Papéis iniciais:
+Entidades operacionais usam `company_id` para isolamento multi-tenant.
 
-```txt
-OWNER
-ADMIN
-MEMBER
-```
+## Regra de roteamento API
 
-### Regras
+O backend nao usa `/api`.
 
-- OWNER pode gerenciar empresa, usuários e tudo do tenant.
-- ADMIN pode gerenciar cadastros e operações.
-- MEMBER pode cadastrar clientes, produtos, estoque e orçamentos.
-- Toda rota privada exige JWT válido.
-- Toda rota privada precisa validar o `company_id`.
+O frontend chama `/api/*`.
 
----
-
-## 9. Proposta pública
-
-A proposta pública deve ser acessada por token seguro.
+O Nginx remove `/api` e encaminha para o backend.
 
 Exemplo:
 
 ```txt
-GET /public/quotes/{token}
+Frontend:
+POST /api/auth/login
+
+Nginx:
+proxy_pass http://backend:8080/
+
+Backend:
+POST /auth/login
+```
+
+Rotas reais do backend:
+
+- `/auth/login`
+- `/auth/register`
+- `/auth/me`
+- `/customers`
+- `/products`
+- `/services`
+- `/quotes`
+- `/stock/movements`
+- `/stock/replenishment`
+- `/dashboard/summary`
+- `/company/settings`
+
+Rotas Quarkus nao devem receber prefixo `/api`.
+
+## Nginx
+
+O Nginx possui duas responsabilidades principais:
+
+1. Encaminhar `/api/` para o backend Quarkus removendo o prefixo.
+2. Encaminhar `/` para o frontend Next.js.
+
+Configuracao esperada:
+
+```nginx
+location /api/ {
+    proxy_pass http://backend:8080/;
+}
+
+location / {
+    proxy_pass http://frontend:3000;
+}
+```
+
+Dentro do container Nginx, usar nomes de servico Docker (`backend`, `frontend`), nunca `localhost` para acessar outros containers.
+
+## Swagger/OpenAPI
+
+Rotas diretas no backend:
+
+- `GET /q/openapi`
+- `GET /q/swagger-ui`
+
+Rotas via Nginx:
+
+- `GET /api/q/openapi`
+- `GET /api/q/swagger-ui`
+
+O OpenAPI usa configuracao compatibilizada com proxy para funcionar via `/api`.
+
+## Autenticacao e JWT
+
+O backend usa JWT proprio via `JwtService`.
+
+Fluxo:
+
+1. Usuario faz login em `/auth/login`.
+2. Backend retorna token.
+3. Frontend armazena token conforme padrao atual.
+4. Cliente HTTP envia `Authorization: Bearer TOKEN`.
+5. `AuthFilter` valida token.
+6. `AuthenticatedTenant` disponibiliza `userId` e `companyId`.
+
+Endpoints publicos:
+
+- Login.
+- Cadastro.
+- Proposta publica por token.
+- Recursos Quarkus `/q/*`.
+
+## Multi-tenant
+
+Regra obrigatoria:
+
+```txt
+Todo dado interno deve ser filtrado pela empresa autenticada.
+```
+
+Padrao:
+
+- Entidades possuem relacao com `CompanyEntity`.
+- Repositories consultam por `company.id`.
+- Services usam `AuthenticatedTenant.companyId()`.
+- Endpoints internos exigem token.
+
+Aplicar sempre em clientes, produtos, servicos, estoque, movimentacoes, orcamentos, dashboard e reposicao.
+
+## Paginacao, busca e filtros
+
+As listagens principais aceitam `page`, `size`, `search`, `sort` e `direction` quando aplicavel.
+
+O tamanho padrao e `10`; o backend limita `size` a no maximo `100`.
+
+O backend pagina no banco com Panache `Page.of(page, size)` e sempre filtra por `company.id` nos dados internos.
+
+O contrato paginado preserva `items`, `page`, `size` e `total`, e tambem retorna `content`, `totalElements`, `totalPages`, `first` e `last`.
+
+Campos de ordenacao sao mapeados por modulo nos repositories. Campos invalidos caem na ordenacao padrao, evitando usar valores arbitrarios da URL em JPQL.
+
+Filtros implementados:
+
+- Produtos: `search`, `active`, `lowStock`, `sort`, `direction`.
+- Clientes: `search`, `sort`, `direction`.
+- Servicos: `search`, `active`, `sort`, `direction`.
+- Orcamentos: `search`, `status`, `customerId`, `dateFrom`, `dateTo`, `sort`, `direction`.
+- Movimentacoes: `search`, `productId`, `type`, `dateFrom`, `dateTo`, `sort`, `direction`.
+- Reposicao: `search`, `status`, `page`, `size`.
+
+O frontend usa `PaginationControls` nas listagens principais para pagina atual, total de registros e seletor de itens por pagina.
+
+## Dashboard Gerencial v2
+
+O dashboard usa o pacote backend `com.stockflow.dashboard`.
+
+Endpoint real do backend:
+
+- `GET /dashboard/summary`
+
+Rota via Nginx/frontend:
+
+- `GET /api/dashboard/summary`
+
+Parametros aceitos:
+
+- `period`: `today`, `last7days`, `currentMonth`, `previousMonth` ou `custom`.
+- `dateFrom`: data inicial para `period=custom`.
+- `dateTo`: data final para `period=custom`.
+
+O periodo padrao e `currentMonth`. Quando `period=custom`, `dateFrom` e `dateTo` sao obrigatorios e `dateFrom` deve ser menor ou igual a `dateTo`.
+
+O DTO principal e `DashboardSummaryResponse`, com blocos aninhados:
+
+- `period`: intervalo aplicado.
+- `quotes`: totais, valores aprovado/em aberto e taxa de aprovacao.
+- `stock`: contagem de estoque baixo e sem estoque.
+- `customers`: total de clientes e clientes criados no periodo.
+- `recentQuotes`.
+- `recentCustomers`.
+- `recentStockMovements`.
+- `criticalProducts`.
+
+O service usa `AuthenticatedTenant.companyId()` e todos os repositories filtram por `company.id`, inclusive agregacoes e listas recentes. As listas resumidas usam limite fixo de 5 registros.
+
+## Configuracoes da Empresa / Perfil Comercial
+
+As configuracoes comerciais usam a entidade existente `CompanyEntity` e a tabela `companies`. A migration `V11__company_commercial_settings.sql` adiciona os campos comerciais e os padroes de proposta sem criar uma segunda entidade de empresa.
+
+Endpoint real do backend:
+
+- `GET /company/settings`
+- `PUT /company/settings`
+
+Rotas via Nginx/frontend:
+
+- `GET /api/company/settings`
+- `PUT /api/company/settings`
+
+DTOs principais:
+
+- `CompanySettingsResponse`
+- `UpdateCompanySettingsRequest`
+
+O service `CompanySettingsService` usa `AuthenticatedTenant.companyId()` para buscar e atualizar exclusivamente a empresa autenticada. O payload nao expoe nem aceita troca de `companyId`.
+
+Os campos comerciais sao usados em tres pontos:
+
+- PDF de proposta: `QuotePdfService` usa nome comercial, razao social, documento, contato e endereco quando disponiveis.
+- Proposta publica: `PublicQuoteResponse` expoe apenas os dados comerciais necessarios para a pagina publica.
+- Novos orcamentos: `QuoteService` aplica validade, observacoes e condicoes de pagamento padrao quando o payload nao informa esses valores.
+
+Upload de logo, storage de arquivos e templates customizaveis nao fazem parte da v1.
+
+## Fluxo de requisicoes
+
+### Ambiente via Nginx
+
+```txt
+Browser
+  -> /api/products
+  -> Nginx remove /api
+  -> Backend recebe /products
+```
+
+### Ambiente backend direto
+
+```txt
+curl http://localhost:8080/products
+```
+
+## Orcamentos e estoque
+
+Fluxo de status:
+
+```txt
+DRAFT -> SENT -> CUSTOMER_APPROVED -> COMPLETED
 ```
 
 Regras:
 
-- Não exigir login.
-- Token deve ser difícil de adivinhar.
-- Token deve apontar para uma proposta específica.
-- Link deve respeitar validade da proposta.
-- Aprovação pública deve mudar status do orçamento para `APPROVED`.
-- Após aprovação, estoque deve ser baixado automaticamente.
+- Aprovacao publica nao baixa estoque.
+- Aprovacao manual como cliente nao baixa estoque.
+- Conclusao interna baixa estoque.
+- Conclusao interna cria movimentacoes `SALE`.
+- Servicos nao baixam estoque.
+- Produtos repetidos sao agregados antes da validacao.
+- `stockDeducted` protege contra baixa duplicada.
 
----
+## PDF de proposta/orcamento
 
-## 10. PDF
+A geracao de PDF e feita no backend Quarkus com a biblioteca OpenPDF (`com.github.librepdf:openpdf`).
 
-No MVP, o PDF pode ser gerado sob demanda.
+O servico responsavel e `com.stockflow.publicquotes.QuotePdfService`.
 
-Opções futuras:
+O PDF e gerado sob demanda em memoria a partir do orcamento, empresa, cliente, itens e totais. A resposta encapsula os bytes e o nome do arquivo em `QuotePdfResponse`.
 
-- gerar e salvar PDF em storage;
-- salvar logo da empresa;
-- salvar histórico de PDFs gerados.
+Os dados da empresa no PDF sao resolvidos a partir das configuracoes comerciais da propria `CompanyEntity`. Campos vazios sao ignorados para evitar linhas em branco. Observacoes e condicoes de pagamento usam primeiro os valores do orcamento e, se estiverem vazios, os padroes configurados na empresa.
 
-No MVP, priorizar funcionamento simples.
+Nao ha storage de PDF nesta fase. Os arquivos nao sao persistidos em disco, MinIO ou S3, e nao ha historico de PDFs gerados.
 
----
+Endpoints reais do backend:
 
-## 11. Deploy
+- `GET /quotes/{id}/pdf`
+- `GET /public/quotes/{token}/pdf`
 
-### Desenvolvimento
+Rotas via Nginx/frontend:
 
-```txt
-Frontend: localhost:3000
-Backend: localhost:8080
-PostgreSQL: localhost:5432
-```
+- `GET /api/quotes/{id}/pdf`
+- `GET /api/public/quotes/{token}/pdf`
 
-### Produção inicial em VPS
+As respostas usam:
 
 ```txt
-Nginx/Traefik
-Frontend
-Backend
-PostgreSQL
+Content-Type: application/pdf
+Content-Disposition: inline; filename="proposta-{codigo}.pdf"
 ```
 
-### Comandos iniciais
+Seguranca:
+
+- O endpoint interno passa pelo fluxo normal de autenticacao JWT e usa `AuthenticatedTenant.companyId()` ao buscar o orcamento.
+- Usuario autenticado so recebe PDF de orcamento da propria empresa.
+- O endpoint publico nao exige login, mas busca a proposta exclusivamente pelo token publico valido.
+- Token invalido nao expoe dados e retorna erro conforme o padrao atual.
+
+Swagger/OpenAPI documenta os endpoints com retorno `application/pdf`.
+
+## Reposicao / Compras v1
+
+A reposicao simples usa o pacote backend `com.stockflow.replenishments`.
+
+O servico responsavel e `ReplenishmentService`, que lista produtos criticos da empresa autenticada e delega a entrada de estoque para `StockService.entryWithReference`.
+
+Endpoints reais do backend:
+
+- `GET /stock/replenishment`
+- `POST /stock/replenishment/{productId}/restock`
+
+Rotas via Nginx/frontend:
+
+- `GET /api/stock/replenishment`
+- `POST /api/stock/replenishment/{productId}/restock`
+
+Rotas legadas de compatibilidade:
+
+- `GET /replenishments`
+- `POST /replenishments/entries`
+
+Regras tecnicas:
+
+- Os endpoints internos passam pelo filtro JWT.
+- Produtos sao consultados pela empresa autenticada.
+- Apenas produtos ativos com `stockQuantity <= minimumStock` aparecem.
+- A sugestao e calculada em `ReplenishmentCalculator`.
+- Se o estoque estiver abaixo do minimo, a sugestao e a diferenca ate o minimo.
+- Se o estoque estiver exatamente no minimo, a sugestao e `1`.
+- O registro de reposicao e transacional.
+- A reposicao cria movimentacao `IN` com `referenceType=REPLENISHMENT`.
+- Nao ha entidade de pedido de compra, fornecedor ou workflow de compra nesta fase.
+
+Frontend:
+
+- A tela fica em `frontend/src/app/stock/replenishment/page.tsx`.
+- O componente principal e `features/replenishments/ReplenishmentsPage`.
+- O cliente HTTP usa `/api` indiretamente pelo `apiRequest`.
+- A UI usa modal local e toast, sem `window.alert` ou `window.confirm`.
+
+## Estrategia de erros
+
+Estado atual:
+
+- Backend usa excecoes JAX-RS e Bean Validation.
+- Ainda nao ha envelope global unico para todos os erros.
+- Frontend usa `getApiErrorMessage` para extrair mensagem amigavel e evitar exibir HTML/erro tecnico cru.
+
+Pendencia recomendada:
+
+- Criar padrao global de erro no backend, por exemplo:
+
+```json
+{
+  "message": "Mensagem amigavel",
+  "details": []
+}
+```
+
+## Estrategia de testes
+
+### Backend
+
+- Testes Quarkus com JUnit 5 e RestAssured.
+- Testes de recursos por modulo.
+- Testes de regras de calculo em services/calculators.
+- H2 em perfil de teste.
+
+### Frontend
+
+- Vitest.
+- React Testing Library.
+- Testes de paginas, formularios, layout, toast e modal.
+
+### Comandos
+
+Backend:
 
 ```bash
-docker compose up -d --build
-docker compose logs -f
-docker compose down
+mvn -B test
 ```
 
----
+Frontend:
 
-## 12. Observabilidade mínima
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-Para o MVP:
+Docker:
 
-- logs do Docker;
-- health check do backend;
-- health check do frontend;
-- endpoint `/q/health` do Quarkus;
-- backup diário do PostgreSQL.
+```bash
+docker compose down
+docker compose up -d --build
+docker compose ps
+```
 
-Futuro:
+## Decisoes tecnicas importantes
 
-- Uptime Kuma;
-- Grafana;
-- Loki;
-- Sentry.
+- Backend nao usa `/api`; Nginx e responsavel pelo prefixo publico.
+- Dados internos sao isolados por empresa.
+- Produtos controlam estoque; servicos nao.
+- Toda alteracao de estoque gera movimentacao.
+- Aprovacao publica de proposta nao baixa estoque.
+- Conclusao interna do orcamento baixa estoque.
+- PDF de proposta e gerado sob demanda pelo backend, sem storage nesta fase.
+- Reposicao / Compras v1 registra entrada de estoque, nao pedido de compra completo.
+- Configuracoes da Empresa v1 ficam na entidade `CompanyEntity` e alimentam PDF, proposta publica e padroes de novos orcamentos.
+- Nao usar `window.alert` ou `window.confirm`; usar toast e modal.
+- Preferir menor alteracao segura e padroes existentes.
+
+Consulte tambem `DECISIONS.md`.

@@ -11,8 +11,10 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { PageHeader } from "@/components/ui/page-header";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   DataTable,
   EmptyState,
@@ -25,6 +27,7 @@ import {
   TableShell,
 } from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { deleteQuote, listQuotes } from "./quote-service";
 import { QuoteForm } from "./quote-form";
 import type { Quote, QuoteStatus } from "./types";
@@ -35,9 +38,11 @@ const statusOptions: Array<{ value: QuoteStatus | ""; label: string }> = [
   { value: "", label: "Todos" },
   { value: "DRAFT", label: "Rascunho" },
   { value: "SENT", label: "Enviado" },
-  { value: "APPROVED", label: "Aprovado" },
+  { value: "CUSTOMER_APPROVED", label: "Aprovado pelo cliente" },
+  { value: "COMPLETED", label: "Concluído" },
   { value: "REJECTED", label: "Recusado" },
   { value: "CANCELLED", label: "Cancelado" },
+  { value: "EXPIRED", label: "Expirado" },
 ];
 
 export function QuotesPage() {
@@ -46,20 +51,34 @@ export function QuotesPage() {
   const [token] = useState<string | null>(() =>
     typeof window === "undefined" ? null : getToken(),
   );
+  const [search, setSearch] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [status, setStatus] = useState<QuoteStatus | "">("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>("create");
   const [selectedItem, setSelectedItem] = useState<Quote | undefined>();
+  const [quoteToCancel, setQuoteToCancel] = useState<Quote | null>(null);
 
   const quotes = useQuery({
-    queryKey: ["quotes", status, token],
-    queryFn: () => listQuotes(token ?? "", { status }),
+    queryKey: ["quotes", submittedSearch, status, dateFrom, dateTo, page, size, token],
+    queryFn: () => listQuotes(token ?? "", { dateFrom, dateTo, page, search: submittedSearch, size, status }),
     enabled: Boolean(token),
   });
 
   const removeQuote = useMutation({
     mutationFn: (id: string) => deleteQuote(token ?? "", id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["quotes"] }),
+    onSuccess: () => {
+      appToast.success("Orçamento cancelado com sucesso.");
+      setQuoteToCancel(null);
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível cancelar o orçamento."));
+    },
   });
 
   useEffect(() => {
@@ -68,6 +87,38 @@ export function QuotesPage() {
       router.replace("/login");
     }
   }, [router, token]);
+
+  useEffect(() => {
+    if (quotes.isError) {
+      appToast.error("Não foi possível carregar os orçamentos.");
+    }
+  }, [quotes.isError]);
+
+  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPage(0);
+    setSubmittedSearch(search.trim());
+  }
+
+  function changeStatus(value: QuoteStatus | "") {
+    setPage(0);
+    setStatus(value);
+  }
+
+  function changeDateFrom(value: string) {
+    setPage(0);
+    setDateFrom(value);
+  }
+
+  function changeDateTo(value: string) {
+    setPage(0);
+    setDateTo(value);
+  }
+
+  function changeSize(value: number) {
+    setPage(0);
+    setSize(value);
+  }
 
   function openCreateModal() {
     setMode("create");
@@ -92,13 +143,9 @@ export function QuotesPage() {
     queryClient.invalidateQueries({ queryKey: ["quotes"] });
   }
 
-  function confirmCancel(quote: Quote) {
-    if (
-      window.confirm(
-        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
-      )
-    ) {
-      removeQuote.mutate(quote.id);
+  function confirmCancel() {
+    if (quoteToCancel) {
+      removeQuote.mutate(quoteToCancel.id);
     }
   }
 
@@ -116,10 +163,17 @@ export function QuotesPage() {
         title="Gestão de orçamentos"
       />
 
-      <DataToolbar>
+      <DataToolbar
+        onSubmit={submitSearch}
+        search={{
+          onChange: setSearch,
+          placeholder: "Buscar por código ou cliente...",
+          value: search,
+        }}
+      >
         <select
           className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-72"
-          onChange={(event) => setStatus(event.target.value as QuoteStatus | "")}
+          onChange={(event) => changeStatus(event.target.value as QuoteStatus | "")}
           value={status}
         >
           {statusOptions.map((option) => (
@@ -128,6 +182,20 @@ export function QuotesPage() {
             </option>
           ))}
         </select>
+        <input
+          aria-label="Data inicial"
+          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+          onChange={(event) => changeDateFrom(event.target.value)}
+          type="date"
+          value={dateFrom}
+        />
+        <input
+          aria-label="Data final"
+          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+          onChange={(event) => changeDateTo(event.target.value)}
+          type="date"
+          value={dateTo}
+        />
       </DataToolbar>
 
       <Card className="overflow-hidden">
@@ -188,7 +256,7 @@ export function QuotesPage() {
                         <ActionButton
                           aria-label={`Cancelar ${quote.code}`}
                           disabled={removeQuote.isPending}
-                          onClick={() => confirmCancel(quote)}
+                          onClick={() => setQuoteToCancel(quote)}
                           type="button"
                           variant="danger"
                         >
@@ -201,6 +269,16 @@ export function QuotesPage() {
               </tbody>
             </DataTable>
           </TableShell>
+        ) : null}
+        {quotes.data ? (
+          <PaginationControls
+            onPageChange={setPage}
+            onSizeChange={changeSize}
+            page={quotes.data.page}
+            size={quotes.data.size}
+            total={quotes.data.totalElements ?? quotes.data.total}
+            totalPages={quotes.data.totalPages}
+          />
         ) : null}
       </Card>
       <Modal
@@ -217,6 +295,17 @@ export function QuotesPage() {
           quote={selectedItem}
         />
       </Modal>
+      <ConfirmDialog
+        confirmLabel="Cancelar orçamento"
+        description="Tem certeza que deseja cancelar este orçamento? Esta ação pode afetar o histórico comercial."
+        loading={removeQuote.isPending}
+        loadingLabel="Cancelando..."
+        onCancel={() => setQuoteToCancel(null)}
+        onConfirm={confirmCancel}
+        open={Boolean(quoteToCancel)}
+        title="Cancelar orçamento"
+        variant="danger"
+      />
     </AppLayout>
   );
 }
@@ -225,7 +314,8 @@ export function statusLabel(status: QuoteStatus) {
   const labels: Record<QuoteStatus, string> = {
     DRAFT: "Rascunho",
     SENT: "Enviado",
-    APPROVED: "Aprovado",
+    CUSTOMER_APPROVED: "Aprovado pelo cliente",
+    COMPLETED: "Concluído",
     REJECTED: "Recusado",
     EXPIRED: "Expirado",
     CANCELLED: "Cancelado",
@@ -235,7 +325,8 @@ export function statusLabel(status: QuoteStatus) {
 
 export function statusTone(status: QuoteStatus) {
   const tones = {
-    APPROVED: "success",
+    CUSTOMER_APPROVED: "success",
+    COMPLETED: "success",
     CANCELLED: "slate",
     DRAFT: "info",
     EXPIRED: "warning",

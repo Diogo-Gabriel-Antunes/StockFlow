@@ -1,543 +1,545 @@
 # SPEC.md — StockFlow
 
-## 1. Produto
+## Visao do produto
 
-StockFlow é um SaaS para pequenos fornecedores criarem orçamentos profissionais com controle de estoque integrado.
+StockFlow e um SaaS de gestao comercial para pequenos negocios que precisam controlar clientes, produtos, servicos, estoque, orcamentos e propostas sem depender de planilhas e documentos manuais.
 
-## 2. Nicho inicial
+O foco do produto e organizar o fluxo:
 
-O MVP será pensado inicialmente para:
+```txt
+Cliente -> Produtos/Servicos -> Orcamento -> Proposta -> Aprovacao -> Conclusao -> Estoque
+```
 
-- fornecedores pet;
-- pequenas confecções.
+## Publico-alvo
 
-Esses nichos possuem produtos físicos, vendas recorrentes, necessidade de reposição e uso frequente de orçamento/proposta.
+- Pequenos fornecedores.
+- Pequenos distribuidores.
+- Negocios que vendem por orcamento.
+- Empresas com catalogo simples de produtos e servicos.
+- Operacoes que precisam controlar estoque minimo e reposicao sem ERP complexo.
 
----
+## Modulos atuais
 
-## 3. Problema
+### Implementados
 
-Pequenas empresas normalmente usam:
+- Autenticacao.
+- Empresas e multi-tenant.
+- Clientes.
+- Produtos.
+- Servicos.
+- Estoque e movimentacoes.
+- Estoque baixo.
+- Orcamentos.
+- Link publico de proposta.
+- PDF profissional inicial de proposta/orcamento.
+- Reposicao / Compras v1.
+- Dashboard Gerencial v2.
+- Configuracoes da Empresa / Perfil Comercial v1.
+- Toast profissional.
+- Modal de confirmacao profissional.
 
-- Excel;
-- WhatsApp;
-- Word;
-- caderno;
-- controle manual de estoque;
-- propostas sem padrão.
+### Parciais
 
-Isso gera:
+- Ordenacao interativa em cabecalhos de tabela ainda nao foi implementada.
+- Deploy VPS: arquivos existem; falta validacao em ambiente real.
 
-- perda de controle;
-- orçamento demorado;
-- estoque desatualizado;
-- dificuldade para saber o que comprar;
-- baixa percepção profissional pelo cliente.
+## Regras de multi-tenant
 
----
+Todo dado operacional interno pertence a uma empresa.
 
-## 4. Proposta de valor
+Regra obrigatoria:
 
-> Crie propostas bonitas, envie por link ou PDF e saiba automaticamente quando precisa repor estoque.
+```txt
+Usuario autenticado so pode acessar dados da propria empresa.
+```
 
----
+Aplicar em:
 
-## 5. Usuários
+- Clientes.
+- Produtos.
+- Servicos.
+- Estoque.
+- Movimentacoes.
+- Orcamentos.
+- Dashboard.
+- Reposicao.
+- Configuracoes da empresa.
 
-### Dono da empresa
+Endpoints publicos de proposta usam token publico e nao exigem login, mas devem acessar somente a proposta vinculada ao token.
 
-Quer vender mais, organizar produtos, controlar estoque e acompanhar resultados.
-
-### Funcionário administrativo/comercial
-
-Quer cadastrar clientes, produtos, montar orçamentos e enviar propostas rapidamente.
-
-### Cliente final
-
-Recebe link ou PDF da proposta, visualiza os itens e pode aprovar.
-
----
-
-## 6. Módulos do MVP
-
-## 6.1 Autenticação
+## Autenticacao
 
 ### Funcionalidades
 
-- Cadastro inicial.
+- Cadastro de empresa e usuario OWNER.
 - Login.
-- Logout.
-- Usuário autenticado.
-- Proteção de rotas.
-- Hash de senha.
 - JWT.
+- `GET /auth/me`.
+- Rotas protegidas no frontend.
+- Filtro de autenticacao no backend.
+
+### Regras
+
+- Login valido retorna token.
+- Credenciais invalidas retornam erro de autenticacao.
+- Endpoints internos exigem token.
+- Token carrega `user_id` e `company_id` usados pelo contexto autenticado.
+
+## Clientes
+
+### Campos principais
+
+- Nome.
+- Tipo.
+- Documento.
+- E-mail.
+- Telefone.
+- WhatsApp.
+- Cidade.
+- Estado.
+- Observacoes.
+- Ativo/inativo.
+
+### Regras
+
+- Cliente pertence a empresa autenticada.
+- Listagem deve retornar apenas clientes da empresa atual.
+- Busca backend considera dados principais de contato.
+- Exclusao atual funciona como inativacao/cancelamento logico conforme padrao do modulo.
+
+### Pendencias
+
+- Controles visuais de paginacao.
+- Filtros e ordenacao mais completos.
+
+## Produtos
+
+### Campos principais
+
+- Nome.
+- SKU/codigo interno.
+- Codigo de barras opcional (`barcode`).
+- Codigo de referencia opcional (`referenceCode`).
+- Categoria.
+- Preco de custo.
+- Preco de venda.
+- Unidade.
+- Estoque atual.
+- Estoque minimo.
+- Ativo/inativo.
+
+### Regras
+
+- Produto pertence a empresa autenticada.
+- Produto controla estoque.
+- Produto pode ser usado em orcamento.
+- Produto pode aparecer em estoque baixo quando `stockQuantity <= minimumStock`.
+- Codigo de barras e codigo de referencia nao sao obrigatorios.
+- Busca de produtos deve considerar nome, SKU, codigo de barras e codigo de referencia.
+
+## Servicos
+
+### Campos principais
+
+- Nome.
+- Descricao.
+- Preco padrao.
+- Custo estimado.
+- Ativo/inativo.
+
+### Regras criticas
+
+- Servicos nao controlam estoque.
+- Servicos podem entrar em orcamentos.
+- Servicos nao geram movimentacao de estoque.
+- Servicos nao baixam estoque na conclusao do orcamento.
+
+## Estoque
+
+### Regras principais
+
+- Estoque nao pode ficar negativo.
+- Toda entrada gera movimentacao.
+- Toda saida gera movimentacao.
+- Todo ajuste gera movimentacao.
+- Movimentacoes devem respeitar empresa autenticada.
+- Produtos inativos nao devem aparecer em alertas de estoque baixo, salvo regra futura explicita.
+
+### Endpoints principais
+
+- `GET /stock/movements`
+- `GET /stock/movements/product/{productId}`
+- `GET /stock/low`
+- `POST /stock/entries`
+- `POST /stock/outputs`
+- `POST /stock/adjustments`
+
+### Status de estoque baixo
+
+- `OUT_OF_STOCK`: estoque menor ou igual a zero.
+- `LOW_STOCK`: estoque maior que zero e menor ou igual ao estoque minimo.
+
+## Movimentacoes de estoque
+
+### Dados registrados
+
+- Empresa.
+- Produto.
+- Tipo.
+- Quantidade.
+- Quantidade anterior.
+- Nova quantidade.
+- Motivo.
+- Tipo de referencia.
+- ID de referencia.
+- Usuario responsavel.
+- Data/hora.
+
+### Tipos atuais
+
+- `IN`
+- `OUT`
+- `ADJUSTMENT`
+- `SALE`
+- `CANCELLATION`
+
+### Regras
+
+- Movimentacoes de orcamento concluido usam referencia ao orcamento.
+- Servicos nao geram movimentacao.
+- Movimentacoes de reposicao usam referencia `REPLENISHMENT`.
+
+## Orcamentos
+
+## Fluxo de status
+
+O fluxo correto separa aprovacao do cliente e conclusao interna.
+
+```txt
+DRAFT -> SENT -> CUSTOMER_APPROVED -> COMPLETED
+```
+
+Labels em portugues:
+
+```txt
+Rascunho -> Enviado -> Aprovado pelo cliente -> Concluido
+```
+
+Tambem existem:
+
+- `REJECTED`: recusado.
+- `CANCELLED`: cancelado.
+- `EXPIRED`: expirado.
+
+### Regras criticas
+
+- Orcamento nasce como `DRAFT`.
+- Novo orcamento usa `defaultQuoteValidityDays`, `defaultQuoteNotes` e `defaultPaymentTerms` da empresa quando esses campos estiverem configurados e o payload nao trouxer valores especificos.
+- Valores informados diretamente no orcamento sempre tem prioridade sobre os padroes da empresa.
+- Envio muda para `SENT`.
+- Aprovacao publica muda para `CUSTOMER_APPROVED`.
+- Aprovacao manual interna como cliente tambem muda para `CUSTOMER_APPROVED`.
+- Aprovacao publica nao baixa estoque.
+- Aprovacao manual como cliente nao baixa estoque.
+- Baixa de estoque acontece somente em `POST /quotes/{id}/complete`.
+- Conclusao interna so pode ocorrer em `CUSTOMER_APPROVED`.
+- Conclusao interna valida estoque suficiente antes de baixar qualquer item.
+- Produtos repetidos no orcamento devem ter quantidades somadas antes da validacao.
+- Servicos sao ignorados na baixa.
+- Produtos baixam estoque na conclusao interna.
+- Conclusao cria movimentacoes de estoque.
+- Conclusao e transacional.
+- O mesmo orcamento nao pode baixar estoque duas vezes.
+- A protecao atual usa `stockDeducted`.
+
+### Endpoints internos principais
+
+- `GET /quotes`
+- `POST /quotes`
+- `GET /quotes/{id}`
+- `PUT /quotes/{id}`
+- `DELETE /quotes/{id}`
+- `POST /quotes/{id}/send`
+- `POST /quotes/{id}/mark-customer-approved`
+- `POST /quotes/{id}/complete`
+- `POST /quotes/{id}/reject`
+- `POST /quotes/{id}/cancel`
+- `POST /quotes/{id}/public-token`
+- `GET /quotes/{id}/pdf`
+
+`POST /quotes/{id}/approve` ainda existe como compatibilidade/alias interno para marcar aprovacao do cliente, mas novas telas devem preferir `mark-customer-approved`.
+
+## Proposta publica
 
 ### Endpoints
 
-```txt
-POST /auth/register
-POST /auth/login
-GET  /auth/me
-```
+- `GET /public/quotes/{token}`
+- `POST /public/quotes/{token}/approve`
+- `POST /public/quotes/{token}/reject`
+- `GET /public/quotes/{token}/pdf`
 
-### Critérios de aceite
+### Regras
 
-- Usuário consegue criar uma conta.
-- Ao criar conta, uma empresa também é criada.
-- Usuário consegue fazer login.
-- Rotas privadas recusam acesso sem token.
-- Token contém identificação do usuário e empresa.
+- Acesso publico usa token.
+- Token invalido retorna erro conforme padrao atual.
+- A proposta publica exibe dados comerciais configurados da empresa, quando disponiveis.
+- Campos comerciais vazios nao devem gerar linhas ou textos vazios.
+- Link expirado marca orcamento como expirado.
+- Aprovar publicamente nao baixa estoque.
+- Recusar publicamente muda para `REJECTED`.
+- Status final nao deve permitir nova aprovacao/recusa.
 
----
-
-## 6.2 Empresas / Multi-tenant
+## PDF de proposta/orcamento
 
 ### Funcionalidades
 
-- Criar empresa no cadastro inicial.
-- Editar dados básicos da empresa.
-- Isolar dados por empresa.
+- O sistema gera PDF da proposta/orcamento sob demanda no backend.
+- O PDF interno e acessado por usuario autenticado em `GET /quotes/{id}/pdf`.
+- O PDF publico e acessado sem login por token valido em `GET /public/quotes/{token}/pdf`.
+- O frontend acessa os PDFs via `/api/quotes/{id}/pdf` e `/api/public/quotes/{token}/pdf`.
+- A tela interna de detalhe do orcamento possui botao para baixar/visualizar PDF.
+- A pagina publica da proposta possui botao para baixar/visualizar PDF.
 
-### Campos da empresa
+### Conteudo do PDF
 
-```txt
-id
-name
-document
-email
-phone
-logo_url
-created_at
-updated_at
-```
+- Dados da empresa.
+- Dados comerciais configurados da empresa, incluindo nome comercial, razao social, documento, e-mail, telefone, WhatsApp e endereco quando disponiveis.
+- Dados do cliente.
+- Dados do orcamento, incluindo codigo, data, validade quando houver e status.
+- Produtos e servicos na mesma tabela.
+- Quantidade, valor unitario, desconto por item e total por item.
+- Subtotal, desconto, frete e total final.
+- Rodape indicando que a proposta foi gerada pelo StockFlow.
 
-### Critérios de aceite
+### Regras
 
-- Cada usuário pertence a uma empresa.
-- Dados de uma empresa não aparecem para outra.
-- Toda entidade operacional possui relação com empresa.
+- O PDF e gerado sob demanda em memoria.
+- O PDF nao e salvo em MinIO, S3 ou storage nesta fase.
+- O endpoint interno exige autenticacao e respeita empresa/multi-tenant.
+- O endpoint publico exige token publico valido e nao aceita acesso por `quoteId` sem token.
+- A geracao de PDF nao altera status do orcamento e nao baixa estoque.
+- O nome principal da empresa no PDF usa `tradeName`; se estiver vazio, usa o nome original da empresa.
+- Observacoes e condicoes de pagamento usam os valores do orcamento; se estiverem vazios, usam os padroes comerciais da empresa.
 
----
+## Configuracoes da Empresa / Perfil Comercial
 
-## 6.3 Clientes
+### Endpoints
+
+- `GET /company/settings`
+- `PUT /company/settings`
 
 ### Campos
 
-```txt
-id
-company_id
-name
-type
-document
-email
-phone
-whatsapp
-city
-state
-notes
-created_at
-updated_at
-```
+- `tradeName`: nome comercial usado em propostas e PDF.
+- `legalName`: razao social.
+- `document`: CPF/CNPJ ou documento comercial.
+- `email`: e-mail comercial.
+- `phone`: telefone comercial.
+- `whatsapp`: WhatsApp comercial.
+- `address`, `addressNumber`, `addressComplement`, `neighborhood`, `city`, `state`, `zipCode`: endereco comercial.
+- `defaultQuoteNotes`: observacoes padrao para novas propostas.
+- `defaultPaymentTerms`: condicoes de pagamento padrao.
+- `defaultQuoteValidityDays`: validade padrao de novos orcamentos.
+
+### Regras
+
+- Endpoints exigem autenticacao.
+- Usuario autenticado ve e edita somente a empresa do proprio token.
+- O payload nao aceita troca de empresa.
+- Os dados comerciais ficam na empresa existente; nao ha segunda entidade de empresa nesta versao.
+- `tradeName` e obrigatorio na atualizacao.
+- `email`, quando informado, deve ter formato valido.
+- `state` aceita no maximo 2 caracteres.
+- `defaultQuoteValidityDays` deve ficar entre 1 e 365 quando informado.
+- Novos orcamentos aplicam validade, observacoes e condicoes padrao somente quando o payload nao trouxer valores especificos.
+- PDF e proposta publica exibem somente campos comerciais preenchidos.
+
+### Fora do escopo atual
+
+- Upload de logo.
+- Storage MinIO/S3.
+- Templates customizaveis de PDF.
+- Personalizacao visual avancada da proposta.
+- Dados fiscais avancados.
+
+## Reposicao / Compras
 
 ### Funcionalidades
 
-- Listar clientes.
-- Criar cliente.
-- Editar cliente.
-- Ver detalhes.
-- Inativar ou excluir cliente.
+- Listagem de produtos que precisam de reposicao em `GET /stock/replenishment`.
+- Registro rapido de reposicao em `POST /stock/replenishment/{productId}/restock`.
+- Tela interna em `/stock/replenishment`.
+- Modal para informar quantidade e motivo.
+- Feedback por toast.
 
-### Endpoints
+### Regras
 
-```txt
-GET    /customers
-POST   /customers
-GET    /customers/{id}
-PUT    /customers/{id}
-DELETE /customers/{id}
-```
+- Endpoints exigem autenticacao.
+- Listagem e reposicao respeitam empresa/multi-tenant.
+- Apenas produtos ativos aparecem na reposicao.
+- Produto entra na lista quando `stockQuantity <= minimumStock`.
+- Se `stockQuantity < minimumStock`, `suggestedQuantity = minimumStock - stockQuantity`.
+- Se `stockQuantity == minimumStock`, `suggestedQuantity = 1`.
+- Produto zerado retorna status `OUT_OF_STOCK`.
+- Produto com estoque maior que zero e menor ou igual ao minimo retorna status `LOW_STOCK`.
+- Registro de reposicao soma a quantidade informada ao estoque atual.
+- Quantidade deve ser maior que zero.
+- Reposicao cria movimentacao `IN`.
+- Movimentacao de reposicao usa `referenceType=REPLENISHMENT`.
+- Produto de outra empresa nao aparece e nao pode ser reposto.
 
-### Critérios de aceite
+### Fora do escopo atual
 
-- Cliente sempre pertence à empresa autenticada.
-- Usuário não consegue acessar cliente de outra empresa.
-- Nome é obrigatório.
-- CPF/CNPJ pode ser opcional no MVP.
+- Pedido de compra completo.
+- Fornecedores.
+- Status de pedido de compra.
+- Recebimento parcial.
+- Sugestao baseada em vendas historicas.
 
----
+## Dashboard
 
-## 6.4 Produtos e serviços
+### Dashboard Gerencial v2
 
-### Produto
+Endpoint autenticado:
 
-Campos:
+- `GET /dashboard/summary`
 
-```txt
-id
-company_id
-name
-sku
-category
-cost_price
-sale_price
-unit
-stock_quantity
-minimum_stock
-active
-created_at
-updated_at
-```
+Parametros:
 
-### Serviço
+- `period`: `today`, `last7days`, `currentMonth`, `previousMonth` ou `custom`.
+- `dateFrom`: obrigatorio quando `period=custom`.
+- `dateTo`: obrigatorio quando `period=custom`.
 
-Campos:
+Se `period` nao for informado, o padrao e `currentMonth`.
 
-```txt
-id
-company_id
-name
-description
-default_price
-estimated_cost
-active
-created_at
-updated_at
-```
+### Indicadores atuais
 
-### Funcionalidades
+- Orcamentos criados no periodo.
+- Orcamentos aprovados pelo cliente.
+- Orcamentos concluidos.
+- Orcamentos recusados.
+- Orcamentos cancelados.
+- Orcamentos em aberto.
+- Valor aprovado/concluido no periodo.
+- Valor em aberto no periodo.
+- Taxa de aprovacao calculada por `completed / total * 100`.
+- Produtos ativos com estoque baixo.
+- Produtos ativos sem estoque.
+- Total de clientes ativos.
+- Clientes cadastrados no periodo.
+- Ultimos orcamentos.
+- Ultimos clientes.
+- Ultimas movimentacoes de estoque.
+- Produtos criticos.
 
-- CRUD de produtos.
-- CRUD de serviços.
-- Ativar/inativar.
-- Buscar por nome ou SKU.
-- Definir estoque mínimo.
+### Regras
 
-### Critérios de aceite
+- Dashboard deve respeitar empresa autenticada.
+- Indicadores devem refletir apenas dados da empresa atual.
+- `custom` exige `dateFrom` e `dateTo`, com `dateFrom <= dateTo`; caso contrario retorna `400`.
+- Produtos criticos usam a regra atual `stockQuantity <= minimumStock`.
 
-- Produto pode ter estoque.
-- Serviço não precisa ter estoque.
-- Produto inativo não deve aparecer como opção padrão em novos orçamentos.
-- Preço de venda deve ser maior ou igual a zero.
+## UX
 
----
+### Regras obrigatorias
 
-## 6.5 Estoque simples
-
-### Tipos de movimentação
+Nao usar:
 
 ```txt
-IN
-OUT
-ADJUSTMENT
-SALE
-CANCELLATION
+window.alert
+alert
+window.confirm
+confirm
 ```
 
-### Campos
-
-```txt
-id
-company_id
-product_id
-type
-quantity
-previous_quantity
-new_quantity
-reason
-reference_type
-reference_id
-created_by
-created_at
-```
-
-### Funcionalidades
-
-- Entrada manual.
-- Saída manual.
-- Ajuste manual.
-- Histórico por produto.
-- Alerta de estoque baixo.
-- Baixa automática ao aprovar orçamento.
-
-### Endpoints
-
-```txt
-GET  /stock/movements
-GET  /stock/low
-POST /stock/entries
-POST /stock/outputs
-POST /stock/adjustments
-```
-
-### Critérios de aceite
-
-- Não permitir estoque negativo, salvo se configuração futura permitir.
-- Toda alteração gera movimentação.
-- Aprovação de orçamento gera movimentação tipo `SALE`.
-- Produto abaixo do mínimo aparece em reposição.
-
----
-
-## 6.6 Orçamentos
-
-### Status
-
-```txt
-DRAFT
-SENT
-APPROVED
-REJECTED
-EXPIRED
-CANCELLED
-```
-
-### Campos do orçamento
-
-```txt
-id
-company_id
-customer_id
-code
-status
-valid_until
-subtotal
-discount
-shipping
-total
-notes
-payment_terms
-created_by
-created_at
-updated_at
-```
-
-### Campos dos itens
-
-```txt
-id
-company_id
-quote_id
-item_type
-product_id
-service_id
-description
-quantity
-unit_price
-discount
-total
-```
-
-### Funcionalidades
-
-- Criar orçamento.
-- Adicionar produtos.
-- Adicionar serviços.
-- Calcular subtotal.
-- Aplicar desconto.
-- Aplicar frete.
-- Calcular total.
-- Alterar status.
-- Gerar proposta.
+Usar:
 
-### Endpoints
+- Toast profissional para sucesso, erro, aviso e informacao.
+- Modal profissional para confirmacoes destrutivas ou criticas.
 
-```txt
-GET    /quotes
-POST   /quotes
-GET    /quotes/{id}
-PUT    /quotes/{id}
-DELETE /quotes/{id}
-POST   /quotes/{id}/send
-POST   /quotes/{id}/approve
-POST   /quotes/{id}/reject
-GET    /quotes/{id}/pdf
-```
+### Estado atual
 
-### Critérios de aceite
+- Toast global com `sonner`.
+- Helper `appToast`.
+- Modal reutilizavel `ConfirmDialog`.
+- Loading, empty e error states em varios modulos.
 
-- Orçamento precisa ter cliente.
-- Orçamento precisa ter pelo menos um item para ser enviado.
-- Total deve ser calculado pelo backend.
-- Frontend pode exibir cálculo preliminar, mas backend é a fonte da verdade.
-- Ao aprovar, estoque dos produtos deve ser baixado.
-- Serviços não movimentam estoque.
+## Paginacao, busca e filtros
 
----
-
-## 6.7 Proposta em PDF e link público
-
-### Funcionalidades
-
-- Gerar PDF.
-- Gerar token público.
-- Visualizar proposta por link.
-- Aprovar proposta pelo link.
-- Recusar proposta pelo link.
-
-### Endpoints
-
-```txt
-GET  /public/quotes/{token}
-POST /public/quotes/{token}/approve
-POST /public/quotes/{token}/reject
-```
-
-### Critérios de aceite
-
-- Link público não exige login.
-- Token não pode expor ID sequencial.
-- Link mostra dados da empresa, cliente, itens, valores e validade.
-- Aprovação muda orçamento para `APPROVED`.
-- Aprovação baixa estoque.
-- Link expirado não permite aprovação.
-
----
-
-## 6.8 Reposição / Compras
-
-### Funcionalidades
-
-- Listar produtos abaixo do estoque mínimo.
-- Exibir estoque atual.
-- Exibir estoque mínimo.
-- Sugerir quantidade de compra.
-- Registrar entrada após reposição.
-
-### Critérios de aceite
-
-- Produto com estoque atual menor ou igual ao mínimo aparece na lista.
-- Usuário consegue registrar entrada a partir da tela de reposição.
-- Registro gera movimentação de estoque.
-
----
-
-## 6.9 Dashboard
-
-### Indicadores
-
-- Orçamentos do mês.
-- Valor aprovado no mês.
-- Valor em aberto.
-- Taxa de aprovação.
-- Produtos com estoque baixo.
-- Últimos orçamentos.
-- Últimos clientes.
+### Implementado
 
-### Endpoint
+- Backend aceita `page` e `size` nas listagens principais.
+- `size` padrao e `10`; `size` maximo e `100`.
+- Backend pagina no banco com Panache.
+- Backend retorna DTOs paginados com `items`, `content`, `page`, `size`, `total`, `totalElements`, `totalPages`, `first` e `last`.
+- Produtos aceitam `search`, `active`, `lowStock`, `sort` e `direction`.
+- Clientes aceitam `search`, `sort` e `direction`.
+- Servicos aceitam `search`, `active`, `sort` e `direction`.
+- Orcamentos aceitam `search`, `status`, `customerId`, `dateFrom`, `dateTo`, `sort` e `direction`.
+- Movimentacoes aceitam `search`, `productId`, `type`, `dateFrom`, `dateTo`, `sort` e `direction`.
+- Reposicao aceita `search`, `status`, `page` e `size`.
+- Frontend possui busca, filtros e controles de paginacao nas listagens principais.
+- Frontend permite trocar itens por pagina entre `10`, `20`, `50` e `100`.
 
-```txt
-GET /dashboard/summary
-```
+### Pendencias
 
-### Critérios de aceite
+- Ordenacao interativa por clique nos cabecalhos.
+- Filtro por usuario nas movimentacoes.
 
-- Dashboard considera apenas empresa autenticada.
-- Indicadores devem carregar em uma única tela.
-- Erro em um indicador não deve quebrar a aplicação inteira.
+## Criterios de aceite por modulo
 
----
+### Autenticacao
 
-## 7. Regras globais
+- Cadastro/login funcionando.
+- `/auth/me` retorna usuario e empresa.
+- Endpoints internos bloqueiam ausencia de token.
 
-1. Toda rota privada exige autenticação.
-2. Toda entidade operacional pertence a uma empresa.
-3. Backend nunca deve confiar no `company_id` enviado pelo frontend.
-4. Backend deve calcular valores monetários.
-5. Estoque deve ter histórico de movimentação.
-6. Aprovação de orçamento deve ser idempotente.
-7. Não permitir aprovar duas vezes gerando baixa duplicada.
-8. Excluir preferencialmente deve inativar quando houver histórico.
-9. Usar paginação em listagens.
-10. Usar filtros básicos por nome, status e período.
+### Clientes
 
----
+- CRUD respeita empresa autenticada.
+- Busca funciona.
+- Testes cobrem fluxo principal.
 
-## 8. Telas do MVP
+### Produtos
 
-```txt
-/login
-/register
-/dashboard
-/customers
-/customers/new
-/customers/[id]
-/products
-/products/new
-/services
-/stock
-/stock/low
-/quotes
-/quotes/new
-/quotes/[id]
-/public/quotes/[token]
-/settings/company
-```
+- CRUD respeita empresa autenticada.
+- Campos opcionais `barcode` e `referenceCode` existem.
+- Busca considera codigos.
+- Estoque atual/minimo existem.
 
----
+### Servicos
 
-## 9. Fora do MVP
+- CRUD respeita empresa autenticada.
+- Servico entra em orcamento sem estoque.
 
-Não implementar inicialmente:
+### Estoque
 
-- nota fiscal;
-- financeiro completo;
-- múltiplos depósitos;
-- controle de produção avançado;
-- marketplace;
-- aplicativo mobile nativo;
-- integração contábil;
-- assinatura/pagamento completo;
-- IA;
-- código de barras.
+- Entrada, saida e ajuste atualizam estoque.
+- Saida nao permite estoque negativo.
+- Toda alteracao gera movimento.
 
----
+### Orcamentos
 
-## 10. Estratégia de Testes
+- Totais sao calculados.
+- Produto e servico podem ser adicionados.
+- Aprovacao publica nao baixa estoque.
+- Conclusao interna baixa estoque uma vez.
 
-Toda fase implementada do StockFlow deve incluir testes automatizados mínimos. Uma fase só pode ser considerada concluída depois que os testes forem executados e todas as falhas forem corrigidas.
+### Proposta publica
 
-### Backend
+- Link publico funciona sem login.
+- Aprovar/recusar atualiza status conforme regra.
+- PDF de proposta pode ser baixado internamente e publicamente por token valido.
 
-- Usar JUnit 5 como base de testes.
-- Usar RestAssured para testar endpoints REST.
-- Criar testes de service quando houver regra de negócio relevante, como autenticação, cálculo de totais, baixa de estoque, aprovação idempotente ou isolamento multi-tenant.
-- Cobrir casos de sucesso, validações obrigatórias, respostas de erro principais e bloqueio de acesso sem autenticação quando aplicável.
-- Em módulos com `company_id`, testar que dados de uma empresa não aparecem para outra.
+### Dashboard
 
-### Frontend
+- Indicadores carregam dados da empresa autenticada.
+- Filtro de periodo funciona.
+- Valores monetarios sao exibidos em BRL no frontend.
+- Estoque critico, ultimos orcamentos, ultimos clientes e ultimas movimentacoes aparecem.
 
-- Usar Vitest como test runner.
-- Usar React Testing Library para componentes, páginas simples, formulários e interações.
-- Criar testes básicos para componentes reutilizáveis e hooks introduzidos em cada módulo.
-- Mockar cliente HTTP, armazenamento local, cookies e navegação quando necessário.
-- Cobrir estados básicos de carregamento, erro, sucesso e submissão de formulário quando existirem.
+### UX
 
-### Regra por módulo
-
-Cada módulo novo precisa vir com testes mínimos no backend e/ou frontend conforme o que foi implementado na fase. Não é aceitável entregar CRUD, autenticação, dashboard, estoque, orçamento ou proposta pública sem testes automatizados cobrindo o fluxo principal entregue.
-
-### Antes de concluir uma fase
-
-Executar os testes do backend e do frontend. Se algum teste falhar, corrigir a implementação ou o teste antes de concluir a fase.
-
----
-
-## 11. Prompt base para o Codex
-
-Use este projeto como um SaaS real chamado StockFlow.
-
-Implemente fase por fase, sem pular etapas. Antes de escrever código, leia `README.md`, `ARCHITECTURE.md`, `SPEC.md`, `ROADMAP.md`, `.env.example` e `docker-compose.yml`.
-
-Priorize:
-
-1. backend Quarkus bem estruturado;
-2. frontend Next.js organizado por features;
-3. PostgreSQL com migrations;
-4. multi-tenant por `company_id`;
-5. autenticação JWT;
-6. regras de negócio no backend;
-7. UI simples e funcional;
-8. Docker Compose para rodar localmente e em VPS.
-9. testes automatizados obrigatórios em toda fase implementada.
-
-Não implemente funcionalidades fora do MVP sem autorização.
+- Feedback usa toast.
+- Confirmacoes usam modal.
+- Nao usar alert/confirm nativo.

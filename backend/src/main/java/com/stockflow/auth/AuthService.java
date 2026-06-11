@@ -44,6 +44,7 @@ public class AuthService {
 
         CompanyEntity company = new CompanyEntity();
         company.name = request.companyName().trim();
+        company.tradeName = request.companyName().trim();
         company.document = trimToNull(request.companyDocument());
         company.email = trimToNull(request.companyEmail());
         company.phone = trimToNull(request.companyPhone());

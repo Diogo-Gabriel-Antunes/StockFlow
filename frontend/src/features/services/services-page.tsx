@@ -9,8 +9,10 @@ import { Modal } from "@/components/ui/Modal";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { PageHeader } from "@/components/ui/page-header";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   DataTable,
   EmptyState,
@@ -23,11 +25,13 @@ import {
   TableShell,
 } from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { ServiceItemForm } from "./service-item-form";
 import { deleteServiceItem, listServiceItems } from "./service-item-service";
 import type { ServiceItem } from "./types";
 
 type ModalMode = "create" | "edit";
+type ActiveFilter = "all" | "active" | "inactive";
 
 export function ServicesPage() {
   const router = useRouter();
@@ -37,19 +41,36 @@ export function ServicesPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("active");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>("create");
   const [selectedItem, setSelectedItem] = useState<ServiceItem | undefined>();
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceItem | null>(null);
 
   const services = useQuery({
-    queryKey: ["services", submittedSearch, token],
-    queryFn: () => listServiceItems(token ?? "", { search: submittedSearch }),
+    queryKey: ["services", submittedSearch, activeFilter, page, size, token],
+    queryFn: () =>
+      listServiceItems(token ?? "", {
+        active: activeFilter === "all" ? undefined : activeFilter === "active",
+        page,
+        search: submittedSearch,
+        size,
+      }),
     enabled: Boolean(token),
   });
 
   const removeService = useMutation({
     mutationFn: (id: string) => deleteServiceItem(token ?? "", id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["services"] }),
+    onSuccess: () => {
+      appToast.success("Serviço excluído com sucesso.");
+      setServiceToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível excluir o serviço."));
+    },
   });
 
   useEffect(() => {
@@ -59,9 +80,26 @@ export function ServicesPage() {
     }
   }, [router, token]);
 
+  useEffect(() => {
+    if (services.isError) {
+      appToast.error("Não foi possível carregar os serviços.");
+    }
+  }, [services.isError]);
+
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPage(0);
     setSubmittedSearch(search.trim());
+  }
+
+  function changeActiveFilter(value: ActiveFilter) {
+    setPage(0);
+    setActiveFilter(value);
+  }
+
+  function changeSize(value: number) {
+    setPage(0);
+    setSize(value);
   }
 
   function openCreateModal() {
@@ -87,13 +125,9 @@ export function ServicesPage() {
     queryClient.invalidateQueries({ queryKey: ["services"] });
   }
 
-  function confirmDelete(serviceItem: ServiceItem) {
-    if (
-      window.confirm(
-        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
-      )
-    ) {
-      removeService.mutate(serviceItem.id);
+  function confirmDelete() {
+    if (serviceToDelete) {
+      removeService.mutate(serviceToDelete.id);
     }
   }
 
@@ -115,10 +149,20 @@ export function ServicesPage() {
         onSubmit={submitSearch}
         search={{
           onChange: setSearch,
-          placeholder: "Buscar por nome ou descrição",
+          placeholder: "Buscar por nome ou descrição...",
           value: search,
         }}
-      />
+      >
+        <select
+          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
+          onChange={(event) => changeActiveFilter(event.target.value as ActiveFilter)}
+          value={activeFilter}
+        >
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+          <option value="all">Todos</option>
+        </select>
+      </DataToolbar>
 
       <Card className="overflow-hidden">
         {services.isLoading ? <LoadingState text="Carregando serviços..." /> : null}
@@ -170,7 +214,7 @@ export function ServicesPage() {
                         <ActionButton
                           aria-label={`Excluir ${service.name}`}
                           disabled={removeService.isPending}
-                          onClick={() => confirmDelete(service)}
+                          onClick={() => setServiceToDelete(service)}
                           type="button"
                           variant="danger"
                         >
@@ -183,6 +227,16 @@ export function ServicesPage() {
               </tbody>
             </DataTable>
           </TableShell>
+        ) : null}
+        {services.data ? (
+          <PaginationControls
+            onPageChange={setPage}
+            onSizeChange={changeSize}
+            page={services.data.page}
+            size={services.data.size}
+            total={services.data.totalElements ?? services.data.total}
+            totalPages={services.data.totalPages}
+          />
         ) : null}
       </Card>
       <Modal
@@ -198,6 +252,17 @@ export function ServicesPage() {
           serviceItem={selectedItem}
         />
       </Modal>
+      <ConfirmDialog
+        confirmLabel="Excluir"
+        description="Tem certeza que deseja excluir este serviço? Esta ação não poderá ser desfeita."
+        loading={removeService.isPending}
+        loadingLabel="Excluindo..."
+        onCancel={() => setServiceToDelete(null)}
+        onConfirm={confirmDelete}
+        open={Boolean(serviceToDelete)}
+        title="Excluir serviço"
+        variant="danger"
+      />
     </AppLayout>
   );
 }

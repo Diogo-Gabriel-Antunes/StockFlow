@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { TextField } from "@/components/ui/text-field";
 import { getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { createCustomer, updateCustomer } from "./customer-service";
 import { customerSchema } from "./schemas";
 import type { Customer, CustomerInput } from "./types";
@@ -73,14 +74,17 @@ export function CustomerForm({ customer, onCancel, onSaved }: CustomerFormProps)
       const savedCustomer = customer
         ? await updateCustomer(token, customer.id, normalizeInput(parsed.data))
         : await createCustomer(token, normalizeInput(parsed.data));
+      appToast.success(customer ? "Cliente atualizado com sucesso." : "Cliente criado com sucesso.");
       if (onSaved) {
         onSaved(savedCustomer);
       } else {
         router.push("/customers");
         router.refresh();
       }
-    } catch {
-      setFormError("Não foi possível salvar o cliente.");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Não foi possível salvar o cliente.");
+      setFormError(message);
+      appToast.error(message);
     }
   }
 

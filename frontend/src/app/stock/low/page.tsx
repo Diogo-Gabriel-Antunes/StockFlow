@@ -1,5 +1,5 @@
-import { ReplenishmentsPage } from "@/features/replenishments/replenishments-page";
+import { LowStockPage as LowStockFeaturePage } from "@/features/stock/low-stock-page";
 
 export default function LowStockPage() {
-  return <ReplenishmentsPage />;
+  return <LowStockFeaturePage />;
 }

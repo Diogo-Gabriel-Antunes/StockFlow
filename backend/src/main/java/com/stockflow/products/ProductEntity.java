@@ -32,6 +32,11 @@ public class ProductEntity extends PanacheEntityBase {
     public String sku;
     public String category;
 
+    public String barcode;
+
+    @Column(name = "reference_code")
+    public String referenceCode;
+
     @Column(name = "cost_price", nullable = false)
     public BigDecimal costPrice = BigDecimal.ZERO;
 

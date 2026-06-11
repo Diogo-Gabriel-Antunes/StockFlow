@@ -2,342 +2,319 @@
 
 ## Objetivo
 
-Organizar o desenvolvimento do StockFlow em fases pequenas para facilitar implementação com Codex, revisão técnica e deploy progressivo.
+Organizar o desenvolvimento do StockFlow em fases pequenas, com status real do codigo atual, pendencias e proximas prioridades.
 
----
+Status usados:
 
-## Regra obrigatória de testes por fase
+- `FEITO`: implementado no codigo com testes proporcionais.
+- `PARCIAL`: implementado em parte ou funcional, mas com pendencias relevantes.
+- `PENDENTE`: ainda nao implementado de forma significativa.
+
+## Regra obrigatoria de testes por fase
 
 Toda fase implementada deve incluir testes automatizados proporcionais ao escopo entregue.
 
-- Backend Quarkus deve usar JUnit 5, RestAssured e testes de service quando houver regra de negócio relevante.
-- Frontend Next.js deve usar Vitest, React Testing Library e testes básicos de componentes/hooks quando houver UI ou lógica frontend nova.
-- Cada módulo novo precisa vir com testes mínimos para o fluxo principal, validações e erros relevantes.
-- Antes de concluir uma fase, os testes do backend e do frontend devem ser executados.
-- Falhas de teste devem ser corrigidas antes da fase ser considerada concluída.
-- Fases sem implementação de código devem registrar explicitamente que não há testes automatizados aplicáveis e manter a estratégia de testes documentada.
-
----
+- Backend Quarkus usa JUnit 5, RestAssured e testes de service quando houver regra de negocio relevante.
+- Frontend Next.js usa Vitest e React Testing Library quando houver UI ou logica frontend nova.
+- Cada modulo novo precisa cobrir fluxo principal, validacoes e erros relevantes.
+- Antes de concluir uma fase, rodar testes/build possiveis.
 
 ## Regra anti-loop para uso com Codex
 
-Ao implementar ou corrigir uma fase:
-
-1. Não repetir a mesma solução mais de uma vez.
-2. Se o mesmo erro aparecer duas vezes, parar e explicar a causa provável.
-3. Não recriar arquivos inteiros sem necessidade.
-4. Fazer alterações pequenas e rastreáveis.
-5. Rodar testes após cada correção relevante.
-6. Se não conseguir corrigir após 3 tentativas, interromper e entregar relatório do problema.
+1. Nao repetir a mesma solucao mais de uma vez.
+2. Se o mesmo erro aparecer duas vezes, parar e explicar a causa provavel.
+3. Nao recriar arquivos inteiros sem necessidade.
+4. Fazer alteracoes pequenas e rastreaveis.
+5. Rodar testes apos cada correcao relevante.
+6. Se nao conseguir corrigir apos 3 tentativas, interromper e entregar relatorio do problema.
 
 ## Fase 0 — Planejamento e base documental
 
-### Objetivo
+Status: FEITO
 
-Criar documentação e arquivos-base do projeto.
-
-### Entregas
+### Ja implementado
 
 - `README.md`
 - `ARCHITECTURE.md`
 - `SPEC.md`
 - `ROADMAP.md`
 - `.env.example`
+- `.env.production.example`
 - `docker-compose.yml`
+- `PROJECT_CONTEXT.md` e `DECISIONS.md` passam a compor a documentacao base.
 
-### Critério de conclusão
+### Pendencias
 
-- Codex consegue entender o produto, stack, módulos, entidades, regras e fases de implementação lendo os arquivos.
-- Estratégia obrigatória de testes documentada em `README.md`, `ARCHITECTURE.md`, `SPEC.md` e `ROADMAP.md`.
-- Como não há código funcional nesta fase, não há testes automatizados aplicáveis.
+- Manter estes arquivos atualizados a cada mudanca relevante de arquitetura ou regra de negocio.
 
----
+## Fase 1 — Setup tecnico
 
-## Fase 1 — Setup técnico do projeto
+Status: FEITO
 
-### Objetivo
+### Ja implementado
 
-Criar a estrutura inicial do backend, frontend e banco.
+- Backend Quarkus com Java 21.
+- PostgreSQL.
+- Flyway com migrations em `backend/src/main/resources/db/migration`.
+- OpenAPI e Swagger UI em `/q/openapi` e `/q/swagger-ui`.
+- Health checks.
+- Frontend Next.js/React com TypeScript e Tailwind.
+- Cliente HTTP centralizado no frontend.
+- Dockerfiles para backend e frontend.
+- Docker Compose local.
+- Nginx como proxy reverso.
 
-### Backend
+### Pendencias
 
-- Criar projeto Quarkus.
-- Configurar Java 21.
-- Configurar PostgreSQL.
-- Configurar Flyway.
-- Configurar OpenAPI.
-- Configurar health checks.
-- Criar estrutura de pacotes.
+- Automatizar validacao em CI, se o projeto passar a usar pipeline.
 
-### Frontend
+## Fase 2 — Autenticacao e empresas
 
-- Criar projeto Next.js com TypeScript.
-- Configurar Tailwind.
-- Criar layout base.
-- Configurar cliente HTTP.
-- Configurar variáveis de ambiente.
+Status: FEITO
 
-### Infra
+### Ja implementado
 
-- Ajustar Dockerfiles.
-- Validar `docker-compose.yml`.
-- Subir frontend, backend e banco.
-
-### Critério de conclusão
-
-- `docker compose up -d --build` sobe todos os serviços.
-- Backend responde health check.
-- Frontend abre no navegador.
-- Swagger UI disponível.
-- Backend possui configuração inicial para testes com JUnit 5 e RestAssured.
-- Frontend possui configuração inicial para testes com Vitest e React Testing Library.
-- Testes mínimos de smoke/build são executados antes de concluir a fase.
-
----
-
-## Fase 2 — Autenticação e empresas
-
-### Objetivo
-
-Criar a base SaaS multi-tenant.
-
-### Entregas
-
-- Cadastro de empresa.
-- Cadastro de usuário OWNER.
+- Cadastro de empresa e usuario OWNER.
 - Login.
 - JWT.
-- Endpoint `/auth/me`.
-- Middleware/filtro de autenticação.
-- Contexto de empresa autenticada.
+- Endpoint `GET /auth/me`.
+- Filtro de autenticacao.
+- Contexto de usuario e empresa autenticada.
 - Tela de login.
 - Tela de cadastro.
 - Rotas protegidas no frontend.
+- Endpoints internos protegidos.
+- Testes backend para autenticacao.
+- Testes frontend para protecao/rotas relacionadas.
 
-### Critério de conclusão
+### Pendencias
 
-- Usuário cria conta e empresa.
-- Usuário faz login.
-- Usuário acessa dashboard protegido.
-- Backend identifica `user_id` e `company_id` via token.
-- Backend possui testes com JUnit 5 e RestAssured para `POST /auth/register`, `POST /auth/login`, `GET /auth/me` e bloqueio de rota privada sem token.
-- Backend possui testes de service quando houver regra de autenticação, hash de senha, emissão/validação de JWT ou contexto multi-tenant fora do Resource.
-- Frontend possui testes com Vitest e React Testing Library para tela de login, tela de cadastro e proteção/redirecionamento de rota.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
-
----
+- Hardening futuro: refresh token, cookie httpOnly, politicas por perfil e expiracao mais refinada.
 
 ## Fase 3 — Clientes
 
-### Objetivo
+Status: FEITO
 
-Permitir cadastro e gestão básica de clientes.
-
-### Entregas
+### Ja implementado
 
 - Migration de clientes.
-- CRUD de clientes no backend.
-- Listagem com busca e paginação.
+- CRUD backend em `/customers`.
+- Isolamento por empresa.
+- Busca no backend.
+- Paginacao backend com `page` e `size`.
+- Busca visual na listagem.
+- Controles visuais de paginacao no frontend.
+- Seletor de itens por pagina.
 - Tela de clientes.
-- Formulário de novo cliente.
-- Formulário de edição.
-- Validações básicas.
+- Formulario de criacao/edicao.
+- Inativacao/cancelamento via acao de exclusao logica.
+- Toasts e modal de confirmacao.
+- Testes backend e frontend.
 
-### Critério de conclusão
+### Pendencias
 
-- Usuário consegue criar, listar, editar e excluir/inativar clientes.
-- Dados são filtrados por empresa.
-- Backend possui testes com JUnit 5 e RestAssured para CRUD de clientes, validações obrigatórias e acesso negado a clientes de outra empresa.
-- Backend possui testes de service/repository quando houver regra de busca, paginação, inativação ou isolamento por `company_id`.
-- Frontend possui testes com Vitest e React Testing Library para listagem, formulário de criação/edição e estados básicos de erro/carregamento.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
+- Ordenacao interativa em cabecalhos de tabela.
+- Consolidar estados de erro/loading conforme padrao global.
 
----
+## Fase 4 — Produtos e servicos
 
-## Fase 4 — Produtos e serviços
+Status: FEITO
 
-### Objetivo
+### Ja implementado
 
-Criar a base de itens usados nos orçamentos.
+- CRUD de produtos em `/products`.
+- CRUD de servicos em `/services`.
+- Produtos com estoque atual, estoque minimo, preco de custo e preco de venda.
+- Produtos com `barcode` e `referenceCode` opcionais.
+- Servicos usados em orcamentos sem controle de estoque.
+- Busca backend de produtos incluindo nome, SKU, codigo de barras e codigo de referencia.
+- Paginacao backend.
+- Busca visual nas listagens.
+- Filtros de ativo/inativo em produtos e servicos.
+- Filtro de estoque baixo em produtos.
+- Controles visuais de paginacao no frontend.
+- Seletor de itens por pagina.
+- Isolamento por empresa.
+- Telas de produtos e servicos.
+- Formularios e validacoes.
+- Testes backend e frontend.
 
-### Entregas
+### Pendencias
 
-- CRUD de produtos.
-- CRUD de serviços.
-- Campo de estoque atual.
-- Campo de estoque mínimo.
-- Campo de preço de custo.
-- Campo de preço de venda.
-- Busca por nome/SKU.
-- Tela de produtos.
-- Tela de serviços.
-
-### Critério de conclusão
-
-- Usuário consegue cadastrar produtos e serviços.
-- Produto pode ser usado depois em orçamento e estoque.
-- Serviço pode ser usado em orçamento sem estoque.
-- Backend possui testes com JUnit 5 e RestAssured para CRUD de produtos e serviços, validações de preço, ativação/inativação e busca por nome/SKU.
-- Backend possui testes de service quando houver regra de estoque mínimo, preço ou isolamento por `company_id`.
-- Frontend possui testes com Vitest e React Testing Library para telas e formulários de produtos e serviços.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
-
----
+- Ordenacao interativa em tabelas.
 
 ## Fase 5 — Estoque simples
 
-### Objetivo
+Status: FEITO
 
-Controlar entradas, saídas, ajustes e alertas.
+### Ja implementado
 
-### Entregas
-
-- Migration de movimentações.
+- Migration de movimentacoes de estoque.
 - Entrada de estoque.
-- Saída de estoque.
-- Ajuste de estoque.
-- Histórico de movimentações.
-- Tela de estoque.
-- Tela de produtos abaixo do mínimo.
-- Validação contra estoque negativo.
+- Saida de estoque.
+- Ajuste manual.
+- Historico de movimentacoes.
+- Historico com busca, filtros e paginacao visual.
+- Endpoint `GET /stock/low`.
+- Tela de movimentacoes em `/stock/movements`.
+- Tela de estoque baixo em `/stock/low`.
+- Validacao contra estoque negativo.
+- Toda alteracao de estoque gera movimentacao.
+- Movimentacoes respeitam empresa autenticada.
+- Dashboard exibe produtos com estoque baixo.
+- Testes backend e frontend.
 
-### Critério de conclusão
+### Pendencias de refinamento
 
-- Toda alteração de estoque gera histórico.
-- Produtos abaixo do mínimo aparecem na tela de reposição.
-- Estoque atual é atualizado corretamente.
-- Backend possui testes com JUnit 5 e RestAssured para entrada, saída, ajuste, histórico, estoque baixo e bloqueio de estoque negativo.
-- Backend possui testes de service para cálculo de quantidade anterior/nova, geração de movimentação e isolamento por `company_id`.
-- Frontend possui testes com Vitest e React Testing Library para tela de estoque, tela de baixo estoque e ações principais de movimentação.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
+- Filtro por usuario nas movimentacoes.
+- Melhorias de usabilidade para operacoes grandes.
 
----
+## Fase 6 — Orcamentos
 
-## Fase 6 — Orçamentos
+Status: FEITO
 
-### Objetivo
+### Ja implementado
 
-Permitir criação e gestão de orçamentos.
-
-### Entregas
-
-- Migration de orçamentos.
-- Migration de itens do orçamento.
-- CRUD de orçamento.
-- Adicionar produtos e serviços.
-- Cálculo de subtotal, desconto, frete e total.
-- Status do orçamento.
+- Migration de orcamentos e itens.
+- CRUD backend em `/quotes`.
+- Itens de produto e servico.
+- Calculo de subtotal, desconto, frete e total.
+- Status de orcamento.
 - Tela de listagem.
-- Tela de criação.
+- Listagem com busca, filtro por status, periodo e paginacao visual.
+- Tela de criacao.
 - Tela de detalhes.
+- Isolamento por empresa.
+- Fluxo de status separado entre aprovacao do cliente e conclusao interna.
+- Endpoint `POST /quotes/{id}/complete`.
+- Conclusao interna baixa estoque uma unica vez.
+- Testes backend e frontend.
 
-### Critério de conclusão
+### Pendencias
 
-- Usuário cria orçamento com cliente e itens.
-- Backend calcula os totais.
-- Orçamento pode mudar de status.
-- Orçamentos são filtrados por empresa.
-- Backend possui testes com JUnit 5 e RestAssured para CRUD de orçamento, itens, cálculo de subtotal/desconto/frete/total e alterações de status.
-- Backend possui testes de service para regras de cálculo, validação de itens e isolamento por `company_id`.
-- Frontend possui testes com Vitest e React Testing Library para listagem, criação, detalhes e cálculo preliminar exibido.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
+- Regras futuras para reabertura ou edicao de orcamentos finalizados, se houver necessidade comercial.
 
----
+## Fase 7 — Proposta publica e PDF
 
-## Fase 7 — Proposta pública e PDF
+Status: FEITO
 
-### Objetivo
+### Ja implementado
 
-Transformar orçamento em proposta compartilhável.
+- Geracao de token/link publico.
+- Pagina publica em `/public/quotes/{token}`.
+- Aprovar proposta publicamente.
+- Recusar proposta publicamente.
+- Geracao de PDF de proposta/orcamento sob demanda pelo backend.
+- Endpoint interno autenticado `GET /quotes/{id}/pdf`.
+- Endpoint publico por token `GET /public/quotes/{token}/pdf`.
+- Botao para baixar/visualizar PDF no detalhe interno do orcamento.
+- Botao para baixar/visualizar PDF na proposta publica.
+- Layout profissional inicial da proposta em PDF com empresa, cliente, itens, descontos e totais.
+- Aprovacao publica muda para aprovado pelo cliente e nao baixa estoque.
+- Baixa de estoque ocorre apenas na conclusao interna.
+- Protecao contra baixa duplicada por `stockDeducted`.
+- Testes backend e frontend.
 
-### Entregas
+### Pendencias de refinamento
 
-- Geração de token público.
-- Página pública da proposta.
-- Botão de aprovação.
-- Botão de recusa.
-- Geração de PDF.
-- Aprovação com baixa automática de estoque.
-- Proteção contra aprovação duplicada.
+- Melhorar layout visual do PDF.
+- Upload/exibicao de logo da empresa no PDF.
+- Storage de PDFs gerados, se houver necessidade futura.
+- Envio de proposta por e-mail.
+- Templates customizaveis de proposta.
+- Melhorar apresentacao comercial da proposta publica.
 
-### Critério de conclusão
+## Fase 8 — Reposicao / Compras
 
-- Usuário gera link público.
-- Cliente acessa sem login.
-- Cliente aprova proposta.
-- Orçamento muda para aprovado.
-- Estoque é baixado uma única vez.
-- PDF pode ser baixado.
-- Backend possui testes com JUnit 5 e RestAssured para geração de token público, visualização sem login, aprovação, recusa, expiração e download de PDF.
-- Backend possui testes de service para aprovação idempotente e baixa automática de estoque sem duplicidade.
-- Frontend possui testes com Vitest e React Testing Library para página pública, botões de aprovação/recusa e estados de link expirado/erro.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
+Status: FEITO
 
----
+### Ja implementado
 
-## Fase 8 — Reposição / Compras
+- Endpoint `GET /stock/replenishment`.
+- Endpoint `POST /stock/replenishment/{productId}/restock`.
+- Endpoints internos exigem autenticacao e respeitam empresa/multi-tenant.
+- Lista de produtos ativos no estoque minimo ou abaixo dele.
+- Sugestao simples de reposicao.
+- Acao rapida para registrar entrada de estoque.
+- Historico vinculado por `referenceType=REPLENISHMENT`.
+- Rotas legadas `/replenishments` e `/replenishments/entries` permanecem compatíveis.
+- Tela frontend `/stock/replenishment`.
+- Tela de reposicao com busca, filtro por status e paginacao visual.
+- Item de menu `Reposicao / Compras`.
+- Modal profissional para registrar reposicao.
+- Toasts de sucesso, erro e validacao.
+- Testes backend e frontend da feature.
 
-### Objetivo
+### Pendencias futuras
 
-Ajudar o usuário a saber o que precisa comprar/repor.
-
-### Entregas
-
-- Tela de reposição.
-- Lista de produtos abaixo do estoque mínimo.
-- Sugestão simples de compra.
-- Ação rápida para registrar entrada.
-- Histórico vinculado à reposição.
-
-### Critério de conclusão
-
-- Usuário visualiza produtos críticos.
-- Usuário registra reposição com poucos cliques.
-- Estoque é atualizado corretamente.
-- Backend possui testes com JUnit 5 e RestAssured para listagem de reposição, sugestão de compra e registro de entrada.
-- Backend possui testes de service para regra de produto crítico e atualização de estoque.
-- Frontend possui testes com Vitest e React Testing Library para tela de reposição e ação rápida de entrada.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
-
----
+- Fornecedores.
+- Pedido de compra completo.
+- Status de compra.
+- Recebimento parcial.
+- Sugestao baseada em consumo/vendas.
+- Historico avancado de reposicao.
 
 ## Fase 9 — Dashboard
 
-### Objetivo
+Status: FEITO
 
-Dar visão gerencial básica.
+### Ja implementado
 
-### Entregas
-
-- Total de orçamentos do mês.
-- Valor aprovado no mês.
-- Valor em aberto.
-- Taxa de aprovação.
+- Endpoint `GET /dashboard/summary`.
+- Dashboard Gerencial v2.
+- Filtros de periodo: hoje, ultimos 7 dias, mes atual, mes anterior e personalizado.
+- Validacao de periodo personalizado no backend.
+- Total de orcamentos do periodo.
+- Valor concluido/aprovado operacionalmente no periodo.
+- Valor em aberto no periodo.
+- Taxa de aprovacao.
 - Produtos com estoque baixo.
-- Últimos orçamentos.
-- Últimos clientes.
+- Produtos sem estoque.
+- Clientes cadastrados no periodo.
+- Ultimos orcamentos.
+- Ultimos clientes.
+- Ultimas movimentacoes de estoque.
+- Produtos criticos.
 - Cards e tabelas no frontend.
+- Testes backend e frontend.
 
-### Critério de conclusão
+### Pendencias de refinamento
 
-- Dashboard carrega indicadores da empresa autenticada.
-- Dados batem com orçamentos, clientes e estoque.
-- Backend possui testes com JUnit 5 e RestAssured para `GET /dashboard/summary`, filtros por empresa e cálculo dos indicadores.
-- Backend possui testes de service para agregações de dashboard quando houver lógica fora do Resource.
-- Frontend possui testes com Vitest e React Testing Library para cards, tabelas, estados de carregamento e erro parcial.
-- Testes do backend e do frontend são executados e passam antes de concluir a fase.
+- Drill-down dos indicadores.
 
----
+## Fase 9.1 — Configuracoes da Empresa / Perfil Comercial
 
-## Fase 10 — Deploy em Oracle Cloud Always Free por IP
+Status: FEITO
 
-### Objetivo
+### Ja implementado
 
-Colocar o MVP online para demonstração em uma VPS Ubuntu da Oracle Cloud Always Free, usando apenas o IP público.
+- Endpoint autenticado `GET /company/settings`.
+- Endpoint autenticado `PUT /company/settings`.
+- Campos comerciais da empresa na tabela `companies`.
+- Tela frontend `/settings/company`.
+- Item de menu para Configuracoes da Empresa.
+- Dados comerciais: nome comercial, razao social, documento, e-mail, telefone, WhatsApp e endereco.
+- Padroes de proposta: validade, observacoes e condicoes de pagamento.
+- Validacoes backend e frontend.
+- Toasts de sucesso e erro.
+- Novos orcamentos usam padroes da empresa quando o payload nao informa valores especificos.
+- PDF de proposta usa dados comerciais configurados.
+- Proposta publica usa dados comerciais configurados.
+- Testes backend e frontend.
 
-Nesta fase, não exigir domínio e não configurar Let's Encrypt. HTTPS fica para uma etapa futura, quando houver domínio.
+### Pendencias futuras
 
-### Entregas
+- Upload de logo.
+- Storage de logo.
+- Templates customizaveis.
+- Personalizacao visual da proposta publica.
+- Dados fiscais avancados.
+
+## Fase 10 — Deploy em VPS
+
+Status: PARCIAL
+
+### Ja implementado
 
 - `docker-compose.prod.yml`.
 - `.env.production.example`.
@@ -345,76 +322,60 @@ Nesta fase, não exigir domínio e não configurar Let's Encrypt. HTTPS fica par
 - `infra/nginx/stockflow-ip.conf`.
 - `infra/scripts/deploy.sh`.
 - `infra/scripts/backup-db.sh`.
-- Configuração de produção por Docker Compose.
-- Nginx respondendo pelo IP público.
-- Frontend acessível em `http://IP_DA_VPS`.
-- API acessível em `http://IP_DA_VPS/api`.
-- Propostas públicas acessíveis em `http://IP_DA_VPS/public/quotes/{token}`.
-- Banco PostgreSQL persistente.
-- Volumes Docker.
-- Script de backup.
-- Documentação de deploy sem domínio.
+- Configuracao de producao por Docker Compose.
+- Nginx expondo porta 80.
+- Backend, frontend e Postgres em rede interna no compose de producao.
+- Volume persistente para PostgreSQL.
 
-### Critério de conclusão
+### Pendencias
 
-- Sistema acessível pelo IP público da VPS.
-- Nginx expõe somente porta `80` para web.
-- SSH exposto somente pela porta `22`.
-- Backend fica atrás do Nginx, sem publicar porta `8080`.
-- PostgreSQL não é exposto publicamente.
-- Frontend usa URL pública por IP para acessar a API.
-- Banco com volume persistente.
-- Backup documentado e com script disponível.
-- Testes automatizados existentes do backend e do frontend continuam passando antes do deploy.
-- Health checks de backend, Postgres e Nginx são validados em ambiente de produção ou staging.
-- Script/configuração de backup possui validação mínima documentada ou automatizada quando possível.
-
----
+- Validar deploy em VPS real.
+- Testar restore de backup.
+- HTTPS fica para etapa futura com dominio.
+- Documentar checklist operacional pos-deploy.
 
 ## Fase 11 — Ajustes comerciais
 
-### Objetivo
+Status: PARCIAL
 
-Preparar venda para primeiros clientes.
+### Ja implementado
 
-### Entregas
+- Landing page simples em `/`.
+- Secao de preco fundador.
+- Planos comerciais na landing.
+- CTA para demonstracao.
+- Teste frontend da landing.
 
-- Landing page simples.
-- Página de preço fundador.
-- Ambiente demo.
-- Roteiro de abordagem.
-- Formulário de interesse.
-- Botão WhatsApp.
+### Pendencias
 
-### Critério de conclusão
+- Ambiente demo dedicado.
+- Formulario real de interesse.
+- Botao WhatsApp.
+- Roteiro de abordagem comercial.
+- Captura e acompanhamento de leads.
 
-- Produto pode ser apresentado para potenciais clientes.
-- Fluxo principal está demonstrável.
-- Primeiros clientes podem testar.
-- Frontend possui testes com Vitest e React Testing Library para landing page, página de preço fundador e formulário de interesse quando implementados.
-- Integrações de formulário/WhatsApp possuem testes ou validação documentada quando não forem automatizáveis.
-- Testes automatizados existentes do backend e do frontend são executados e passam antes de concluir a fase.
+## Acabamento tecnico e UX
 
----
+Status geral: PARCIAL
 
-## Ordem recomendada para pedir ao Codex
+### Ja implementado
 
-1. Implementar Fase 1.
-2. Corrigir build e Docker.
-3. Implementar Fase 2.
-4. Testar autenticação.
-5. Implementar Fase 3.
-6. Implementar Fase 4.
-7. Implementar Fase 5.
-8. Implementar Fase 6.
-9. Implementar Fase 7.
-10. Implementar Fase 8.
-11. Implementar Fase 9.
-12. Preparar Fase 10.
+- Toast profissional com `sonner`.
+- Helper centralizado `appToast`.
+- Modal reutilizavel `ConfirmDialog`.
+- Busca por `alert`/`confirm` nativo removida de `frontend/src`.
+- Loading, empty e error states em tabelas e telas principais.
+- Testes frontend para componentes e paginas principais.
 
----
+### Pendencias
 
-## Regra de ouro
+- Ordenacao interativa em cabecalhos de tabela.
+- Padrao global de resposta de erro no backend.
+- Melhor cobertura de testes de service para regras criticas.
 
-Não avançar para a próxima fase se a fase atual não estiver rodando com Docker Compose.
-Também não avançar se os testes obrigatórios da fase atual não tiverem sido criados, executados e aprovados.
+## Proxima prioridade recomendada
+
+1. Padronizar envelope de erro da API.
+2. Refinar ordenacao interativa.
+3. Melhorar filtros analiticos futuros quando houver necessidade comercial.
+4. Evoluir Reposicao / Compras para pedido de compra completo quando houver necessidade comercial.

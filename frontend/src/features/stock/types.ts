@@ -14,14 +14,20 @@ export type StockMovement = {
   referenceType: string | null;
   referenceId: string | null;
   createdBy: string;
+  createdByName: string;
   createdAt: string;
 };
 
 export type StockMovementPage = {
   items: StockMovement[];
+  content?: StockMovement[];
   page: number;
   size: number;
   total: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
 };
 
 export type StockMovementInput = {
@@ -40,9 +46,13 @@ export type LowStockProduct = {
   id: string;
   name: string;
   sku: string | null;
+  barcode: string | null;
+  referenceCode: string | null;
   category: string | null;
+  salePrice: number;
   unit: string;
   stockQuantity: number;
   minimumStock: number;
+  stockStatus: "OUT_OF_STOCK" | "LOW_STOCK";
   suggestedPurchaseQuantity: number;
 };

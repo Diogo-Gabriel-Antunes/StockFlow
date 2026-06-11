@@ -9,6 +9,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   DataTable,
@@ -21,10 +22,14 @@ import {
   TableShell,
 } from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import {
   approveQuote,
+  cancelQuote,
+  completeQuote,
   generatePublicQuoteLink,
   getQuote,
+  privateQuotePdfUrl,
   publicQuotePdfUrl,
   rejectQuote,
   sendQuote,
@@ -40,6 +45,7 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [publicLink, setPublicLink] = useState<PublicQuoteLink | null>(null);
+  const [completeOpen, setCompleteOpen] = useState(false);
   const [token] = useState<string | null>(() =>
     typeof window === "undefined" ? null : getToken(),
   );
@@ -51,23 +57,54 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
   });
 
   const changeStatus = useMutation({
-    mutationFn: (action: "send" | "approve" | "reject") => {
+    mutationFn: (action: "send" | "approve" | "reject" | "cancel") => {
       if (action === "send") {
         return sendQuote(token ?? "", id);
       }
       if (action === "approve") {
         return approveQuote(token ?? "", id);
       }
+      if (action === "cancel") {
+        return cancelQuote(token ?? "", id);
+      }
       return rejectQuote(token ?? "", id);
     },
-    onSuccess: () => {
+    onSuccess: (_data, action) => {
+      const messages = {
+        send: "Orçamento enviado com sucesso.",
+        approve: "Orçamento marcado como aprovado pelo cliente.",
+        reject: "Proposta recusada.",
+        cancel: "Orçamento cancelado com sucesso.",
+      };
+      appToast.success(messages[action]);
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível atualizar o orçamento."));
+    },
+  });
+
+  const complete = useMutation({
+    mutationFn: () => completeQuote(token ?? "", id),
+    onSuccess: () => {
+      appToast.success("Orçamento concluído e estoque baixado com sucesso.");
+      setCompleteOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível concluir o orçamento."));
     },
   });
 
   const generateLink = useMutation({
     mutationFn: () => generatePublicQuoteLink(token ?? "", id),
-    onSuccess: (data) => setPublicLink(data),
+    onSuccess: (data) => {
+      setPublicLink(data);
+      appToast.success("Link público gerado com sucesso.");
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível gerar o link público."));
+    },
   });
 
   useEffect(() => {
@@ -95,34 +132,76 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
           <PageHeader
             action={
               <div className="flex flex-wrap justify-end gap-2">
-                <Button
-                  disabled={generateLink.isPending}
-                  onClick={() => generateLink.mutate()}
-                  variant="secondary"
+                <a
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                  href={privateQuotePdfUrl(quote.data.id)}
+                  rel="noreferrer"
+                  target="_blank"
                 >
-                  <Link2 size={16} aria-hidden="true" />
-                  Gerar link público
-                </Button>
-                <Button
-                  disabled={changeStatus.isPending}
-                  onClick={() => changeStatus.mutate("send")}
-                  variant="secondary"
-                >
-                  Enviar
-                </Button>
-                <Button
-                  disabled={changeStatus.isPending}
-                  onClick={() => changeStatus.mutate("approve")}
-                >
-                  Aprovar
-                </Button>
-                <Button
-                  disabled={changeStatus.isPending}
-                  onClick={() => changeStatus.mutate("reject")}
-                  variant="danger"
-                >
-                  Recusar
-                </Button>
+                  <Download size={16} aria-hidden="true" />
+                  Baixar PDF
+                </a>
+                {quote.data.status === "DRAFT" ? (
+                  <>
+                    <Button
+                      disabled={generateLink.isPending}
+                      onClick={() => generateLink.mutate()}
+                      variant="secondary"
+                    >
+                      <Link2 size={16} aria-hidden="true" />
+                      Gerar link público
+                    </Button>
+                    <Button
+                      disabled={changeStatus.isPending}
+                      onClick={() => changeStatus.mutate("send")}
+                      variant="secondary"
+                    >
+                      Enviar
+                    </Button>
+                  </>
+                ) : null}
+                {quote.data.status === "SENT" ? (
+                  <>
+                    <Button
+                      disabled={generateLink.isPending}
+                      onClick={() => generateLink.mutate()}
+                      variant="secondary"
+                    >
+                      <Link2 size={16} aria-hidden="true" />
+                      Gerar link público
+                    </Button>
+                    <Button
+                      disabled={changeStatus.isPending}
+                      onClick={() => changeStatus.mutate("approve")}
+                    >
+                      Marcar como aprovado pelo cliente
+                    </Button>
+                    <Button
+                      disabled={changeStatus.isPending}
+                      onClick={() => changeStatus.mutate("reject")}
+                      variant="danger"
+                    >
+                      Recusar
+                    </Button>
+                  </>
+                ) : null}
+                {quote.data.status === "CUSTOMER_APPROVED" ? (
+                  <Button
+                    disabled={complete.isPending}
+                    onClick={() => setCompleteOpen(true)}
+                  >
+                    Concluir orçamento
+                  </Button>
+                ) : null}
+                {["DRAFT", "SENT", "CUSTOMER_APPROVED"].includes(quote.data.status) ? (
+                  <Button
+                    disabled={changeStatus.isPending}
+                    onClick={() => changeStatus.mutate("cancel")}
+                    variant="danger"
+                  >
+                    Cancelar
+                  </Button>
+                ) : null}
               </div>
             }
             eyebrow="Orçamento"
@@ -147,6 +226,8 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
                 <a
                   className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-semibold text-ink transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
                   href={publicQuotePdfUrl(publicLink.token)}
+                  rel="noreferrer"
+                  target="_blank"
                 >
                   <Download size={16} aria-hidden="true" />
                   PDF
@@ -192,6 +273,17 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
             <div className="flex justify-between"><span>Frete</span><strong>{currency(quote.data.shipping)}</strong></div>
             <div className="flex justify-between text-base text-ink"><span>Total</span><strong>{currency(quote.data.total)}</strong></div>
           </Card>
+          <ConfirmDialog
+            confirmLabel="Concluir orçamento"
+            description="Esta ação finalizará o orçamento, baixará o estoque dos produtos e não poderá ser desfeita facilmente. Deseja continuar?"
+            loading={complete.isPending}
+            loadingLabel="Concluindo..."
+            onCancel={() => setCompleteOpen(false)}
+            onConfirm={() => complete.mutate()}
+            open={completeOpen}
+            title="Concluir orçamento"
+            variant="warning"
+          />
         </div>
       ) : null}
     </AppLayout>

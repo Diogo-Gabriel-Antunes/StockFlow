@@ -12,7 +12,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class CustomerService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Inject
@@ -25,12 +25,16 @@ public class CustomerService {
     AuthenticatedTenant authenticatedTenant;
 
     public CustomerPageResponse list(String search, Integer page, Integer size) {
+        return list(search, null, null, page, size);
+    }
+
+    public CustomerPageResponse list(String search, String sort, String direction, Integer page, Integer size) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
         UUID companyId = authenticatedTenant.companyId();
 
         return new CustomerPageResponse(
-                customerRepository.listActiveByCompany(companyId, search, safePage, safeSize)
+                customerRepository.listActiveByCompany(companyId, search, sort, direction, safePage, safeSize)
                         .stream()
                         .map(CustomerResponse::from)
                         .toList(),

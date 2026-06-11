@@ -10,8 +10,10 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { PageHeader } from "@/components/ui/page-header";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   DataTable,
   EmptyState,
@@ -24,6 +26,7 @@ import {
   TableShell,
 } from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { deleteCustomer, listCustomers } from "./customer-service";
 import { CustomerForm } from "./customer-form";
 import type { Customer } from "./types";
@@ -38,19 +41,29 @@ export function CustomersPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>("create");
   const [selectedItem, setSelectedItem] = useState<Customer | undefined>();
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const customers = useQuery({
-    queryKey: ["customers", submittedSearch, token],
-    queryFn: () => listCustomers(token ?? "", { search: submittedSearch }),
+    queryKey: ["customers", submittedSearch, page, size, token],
+    queryFn: () => listCustomers(token ?? "", { page, search: submittedSearch, size }),
     enabled: Boolean(token),
   });
 
   const removeCustomer = useMutation({
     mutationFn: (id: string) => deleteCustomer(token ?? "", id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
+    onSuccess: () => {
+      appToast.success("Cliente excluído com sucesso.");
+      setCustomerToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível excluir o cliente."));
+    },
   });
 
   useEffect(() => {
@@ -60,9 +73,21 @@ export function CustomersPage() {
     }
   }, [router, token]);
 
+  useEffect(() => {
+    if (customers.isError) {
+      appToast.error("Não foi possível carregar os clientes.");
+    }
+  }, [customers.isError]);
+
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPage(0);
     setSubmittedSearch(search.trim());
+  }
+
+  function changeSize(value: number) {
+    setPage(0);
+    setSize(value);
   }
 
   function openCreateModal() {
@@ -88,13 +113,9 @@ export function CustomersPage() {
     queryClient.invalidateQueries({ queryKey: ["customers"] });
   }
 
-  function confirmDelete(customer: Customer) {
-    if (
-      window.confirm(
-        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
-      )
-    ) {
-      removeCustomer.mutate(customer.id);
+  function confirmDelete() {
+    if (customerToDelete) {
+      removeCustomer.mutate(customerToDelete.id);
     }
   }
 
@@ -187,7 +208,7 @@ export function CustomersPage() {
                           <ActionButton
                             aria-label={`Excluir ${customer.name}`}
                             disabled={removeCustomer.isPending}
-                            onClick={() => confirmDelete(customer)}
+                            onClick={() => setCustomerToDelete(customer)}
                             type="button"
                             variant="danger"
                           >
@@ -201,6 +222,16 @@ export function CustomersPage() {
               </DataTable>
             </TableShell>
           ) : null}
+        {customers.data ? (
+          <PaginationControls
+            onPageChange={setPage}
+            onSizeChange={changeSize}
+            page={customers.data.page}
+            size={customers.data.size}
+            total={customers.data.totalElements ?? customers.data.total}
+            totalPages={customers.data.totalPages}
+          />
+        ) : null}
         </Card>
         <Modal
           description="Preencha os dados do cliente sem sair da listagem."
@@ -215,6 +246,17 @@ export function CustomersPage() {
             onSaved={handleSaved}
           />
         </Modal>
+        <ConfirmDialog
+          confirmLabel="Excluir"
+          description="Tem certeza que deseja excluir este cliente? Esta ação não poderá ser desfeita."
+          loading={removeCustomer.isPending}
+          loadingLabel="Excluindo..."
+          onCancel={() => setCustomerToDelete(null)}
+          onConfirm={confirmDelete}
+          open={Boolean(customerToDelete)}
+          title="Excluir cliente"
+          variant="danger"
+        />
     </AppLayout>
   );
 }

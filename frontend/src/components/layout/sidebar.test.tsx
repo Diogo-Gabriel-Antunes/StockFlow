@@ -33,10 +33,17 @@ describe("Sidebar", () => {
     );
     expect(screen.getByRole("link", { name: /Produtos/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Serviços/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Estoque/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Reposição \/ Compras/i }),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: /Movimentações de estoque/i }),
+    ).toHaveAttribute("href", "/stock/movements");
+    expect(screen.getByRole("link", { name: /Estoque baixo/i })).toHaveAttribute(
+      "href",
+      "/stock/low",
+    );
+    expect(screen.getByRole("link", { name: /Reposição \/ Compras/i })).toHaveAttribute(
+      "href",
+      "/stock/replenishment",
+    );
     expect(screen.getByRole("link", { name: /Orçamentos/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Configurações/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Clientes/i })).toHaveClass(

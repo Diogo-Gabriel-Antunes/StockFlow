@@ -6,7 +6,9 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -15,14 +17,33 @@ import java.util.UUID;
 @ApplicationScoped
 public class QuoteRepository implements PanacheRepositoryBase<QuoteEntity, UUID> {
 
-    public List<QuoteEntity> listByCompany(UUID companyId, QuoteStatus status, int page, int size) {
-        return find(query(status), Sort.by("createdAt").descending(), parameters(companyId, status))
+    public List<QuoteEntity> listByCompany(
+            UUID companyId,
+            String search,
+            QuoteStatus status,
+            UUID customerId,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            String sort,
+            String direction,
+            int page,
+            int size
+    ) {
+        return find(query(search, status, customerId, dateFrom, dateTo), sort(sort, direction), parameters(companyId, search, status, customerId, dateFrom, dateTo))
                 .page(Page.of(page, size))
                 .list();
     }
 
+    public long countByCompany(UUID companyId, String search, QuoteStatus status, UUID customerId, LocalDate dateFrom, LocalDate dateTo) {
+        return count(query(search, status, customerId, dateFrom, dateTo), parameters(companyId, search, status, customerId, dateFrom, dateTo));
+    }
+
+    public List<QuoteEntity> listByCompany(UUID companyId, QuoteStatus status, int page, int size) {
+        return listByCompany(companyId, null, status, null, null, null, "createdAt", "desc", page, size);
+    }
+
     public long countByCompany(UUID companyId, QuoteStatus status) {
-        return count(query(status), parameters(companyId, status));
+        return countByCompany(companyId, null, status, null, null, null);
     }
 
     public Optional<QuoteEntity> findByCompanyAndId(UUID companyId, UUID id) {
@@ -85,24 +106,94 @@ public class QuoteRepository implements PanacheRepositoryBase<QuoteEntity, UUID>
         return total == null ? BigDecimal.ZERO : total;
     }
 
+    public BigDecimal sumTotalByCompanyStatusesCreatedBetween(
+            UUID companyId,
+            Collection<QuoteStatus> statuses,
+            OffsetDateTime start,
+            OffsetDateTime end
+    ) {
+        BigDecimal total = getEntityManager()
+                .createQuery("""
+                        select coalesce(sum(q.total), 0)
+                        from QuoteEntity q
+                        where q.company.id = :companyId
+                        and q.status in :statuses
+                        and q.createdAt >= :start
+                        and q.createdAt < :end
+                        """, BigDecimal.class)
+                .setParameter("companyId", companyId)
+                .setParameter("statuses", statuses)
+                .setParameter("start", start)
+                .setParameter("end", end)
+                .getSingleResult();
+        return total == null ? BigDecimal.ZERO : total;
+    }
+
     public List<QuoteEntity> listRecentByCompany(UUID companyId, int limit) {
         return find("company.id = ?1", Sort.by("createdAt").descending(), companyId)
                 .page(Page.of(0, limit))
                 .list();
     }
 
-    private String query(QuoteStatus status) {
-        if (status == null) {
-            return "company.id = :companyId";
+    private String query(String search, QuoteStatus status, UUID customerId, LocalDate dateFrom, LocalDate dateTo) {
+        StringBuilder query = new StringBuilder("company.id = :companyId");
+        if (status != null) {
+            query.append(" and status = :status");
         }
-        return "company.id = :companyId and status = :status";
+        if (customerId != null) {
+            query.append(" and customer.id = :customerId");
+        }
+        if (dateFrom != null) {
+            query.append(" and createdAt >= :dateFrom");
+        }
+        if (dateTo != null) {
+            query.append(" and createdAt < :dateTo");
+        }
+        if (search != null && !search.isBlank()) {
+            query.append("""
+                 and (
+                    lower(code) like :search
+                    or lower(customer.name) like :search
+                    or lower(coalesce(customer.document, '')) like :search
+                    or lower(coalesce(notes, '')) like :search
+                )
+                """);
+        }
+        return query.toString();
     }
 
-    private Parameters parameters(UUID companyId, QuoteStatus status) {
+    private Parameters parameters(UUID companyId, String search, QuoteStatus status, UUID customerId, LocalDate dateFrom, LocalDate dateTo) {
         Parameters parameters = Parameters.with("companyId", companyId);
         if (status != null) {
             parameters.and("status", status);
         }
+        if (customerId != null) {
+            parameters.and("customerId", customerId);
+        }
+        if (dateFrom != null) {
+            parameters.and("dateFrom", dateFrom.atStartOfDay().atOffset(ZoneOffset.UTC));
+        }
+        if (dateTo != null) {
+            parameters.and("dateTo", dateTo.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC));
+        }
+        if (search != null && !search.isBlank()) {
+            parameters.and("search", "%" + search.trim().toLowerCase() + "%");
+        }
         return parameters;
+    }
+
+    private Sort sort(String sort, String direction) {
+        String field = switch (sort == null ? "" : sort) {
+            case "total" -> "total";
+            case "status" -> "status";
+            case "validUntil" -> "validUntil";
+            default -> "createdAt";
+        };
+        Sort.Direction safeDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.Ascending : Sort.Direction.Descending;
+        Sort safeSort = Sort.by(field, safeDirection);
+        if (!"createdAt".equals(field)) {
+            safeSort = safeSort.and("createdAt", Sort.Direction.Descending);
+        }
+        return safeSort;
     }
 }

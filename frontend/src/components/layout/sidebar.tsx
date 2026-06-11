@@ -9,6 +9,7 @@ import {
   Menu,
   PackageSearch,
   Settings,
+  ShoppingCart,
   Users,
   Wrench,
   X,
@@ -17,15 +18,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearToken } from "@/features/auth/auth-storage";
-import { ThemeToggle } from "./theme-toggle";
 
 const navigationItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Clientes", href: "/customers", icon: Users },
   { label: "Produtos", href: "/products", icon: Boxes },
   { label: "Serviços", href: "/services", icon: Wrench },
-  { label: "Estoque", href: "/stock", icon: BarChart3 },
-  { label: "Reposição / Compras", href: "/stock/low", icon: PackageSearch },
+  { label: "Movimentações de estoque", href: "/stock/movements", icon: BarChart3 },
+  { label: "Estoque baixo", href: "/stock/low", icon: PackageSearch },
+  { label: "Reposição / Compras", href: "/stock/replenishment", icon: ShoppingCart },
   { label: "Orçamentos", href: "/quotes", icon: FileText },
   { label: "Configurações", href: "/settings/company", icon: Settings },
 ];
@@ -105,9 +106,8 @@ export function Sidebar() {
         </nav>
 
         <div className="mt-auto border-t border-white/10 px-2 pt-4">
-        <ThemeToggle variant="sidebar" />
           <button
-            className="mt-3 inline-flex h-10 w-full items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold text-slate-200 shadow-subtle transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-10 w-full items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold text-slate-200 shadow-subtle transition hover:bg-white/10 hover:text-white"
             onClick={logout}
             type="button"
           >
@@ -124,8 +124,8 @@ function isActive(pathname: string, href: string) {
   if (href === "/dashboard") {
     return pathname === href;
   }
-  if (href === "/stock") {
-    return pathname === "/stock";
+  if (href === "/stock/movements") {
+    return pathname === "/stock" || pathname === "/stock/movements";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

@@ -11,6 +11,7 @@ import { getToken } from "@/features/auth/auth-storage";
 import { listCustomers } from "@/features/customers/customer-service";
 import { listProducts } from "@/features/products/product-service";
 import { listServiceItems } from "@/features/services/service-item-service";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { createQuote, updateQuote } from "./quote-service";
 import { quoteSchema } from "./schemas";
 import type { Quote, QuoteFormInput, QuoteInput } from "./types";
@@ -86,12 +87,12 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
   });
   const products = useQuery({
     queryKey: ["products", "quote-options", token],
-    queryFn: () => listProducts(token ?? "", { size: 100 }),
+    queryFn: () => listProducts(token ?? "", { active: true, size: 100 }),
     enabled: Boolean(token),
   });
   const services = useQuery({
     queryKey: ["services", "quote-options", token],
-    queryFn: () => listServiceItems(token ?? "", { size: 100 }),
+    queryFn: () => listServiceItems(token ?? "", { active: true, size: 100 }),
     enabled: Boolean(token),
   });
 
@@ -118,14 +119,17 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
       const saved = quote
         ? await updateQuote(token, quote.id, payload)
         : await createQuote(token, payload);
+      appToast.success(quote ? "Orçamento atualizado com sucesso." : "Orçamento criado com sucesso.");
       if (onSaved) {
         onSaved(saved);
       } else {
         router.push(`/quotes/${saved.id}`);
         router.refresh();
       }
-    } catch {
-      setFormError("Não foi possível salvar o orçamento.");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Não foi possível salvar o orçamento.");
+      setFormError(message);
+      appToast.error(message);
     }
   }
 

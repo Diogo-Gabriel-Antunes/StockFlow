@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import io.quarkus.test.junit.QuarkusTest;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ class PublicQuoteResourceTest {
     @Test
     void publicQuoteCanBeViewedApprovedOnceAndDownloadedAsPdfWithoutLogin() {
         String token = registerAndToken("public-quotes");
+        updateCompanySettings(token);
         String customerId = createCustomer(token, "Cliente Publico");
         String productId = createProduct(token, "Produto Publico", "PUB-1", "40.00", "10.000");
         String serviceId = createService(token, "Servico Publico", "80.00");
@@ -42,7 +44,13 @@ class PublicQuoteResourceTest {
                 .then()
                 .statusCode(200)
                 .body("code", notNullValue())
-                .body("companyName", notNullValue())
+                .body("companyName", equalTo("Comercial Pública"))
+                .body("companyDocument", equalTo("12.345.678/0001-90"))
+                .body("companyEmail", equalTo("publica@stockflow.test"))
+                .body("companyPhone", equalTo("(47) 3333-3333"))
+                .body("companyWhatsapp", equalTo("(47) 99999-9999"))
+                .body("companyCity", equalTo("Joinville"))
+                .body("companyState", equalTo("SC"))
                 .body("customerName", equalTo("Cliente Publico"))
                 .body("items.size()", equalTo(2));
 
@@ -52,7 +60,14 @@ class PublicQuoteResourceTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/pdf")
-                .body(containsString("%PDF-1.4"));
+                .header("Content-Disposition", containsString("inline; filename=\"proposta-"))
+                .body(containsString("%PDF-"));
+
+        given()
+                .when()
+                .get("/public/quotes/{token}/pdf", "invalid-token")
+                .then()
+                .statusCode(404);
 
         given()
                 .contentType("application/json")
@@ -60,7 +75,7 @@ class PublicQuoteResourceTest {
                 .post("/public/quotes/{token}/approve", publicToken)
                 .then()
                 .statusCode(200)
-                .body("status", equalTo("APPROVED"));
+                .body("status", equalTo("CUSTOMER_APPROVED"));
 
         given()
                 .contentType("application/json")
@@ -68,7 +83,34 @@ class PublicQuoteResourceTest {
                 .post("/public/quotes/{token}/approve", publicToken)
                 .then()
                 .statusCode(200)
-                .body("status", equalTo("APPROVED"));
+                .body("status", equalTo("CUSTOMER_APPROVED"));
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/products/{id}", productId)
+                .then()
+                .statusCode(200)
+                .body("stockQuantity", equalTo(10.0F));
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .queryParam("productId", productId)
+                .when()
+                .get("/stock/movements")
+                .then()
+                .statusCode(200)
+                .body("total", equalTo(0));
+
+        given()
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/quotes/{id}/complete", quoteId)
+                .then()
+                .statusCode(200)
+                .body("status", equalTo("COMPLETED"))
+                .body("stockDeducted", equalTo(true));
 
         given()
                 .header("Authorization", "Bearer " + token)
@@ -162,7 +204,8 @@ class PublicQuoteResourceTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/pdf")
-                .body(containsString("%PDF-1.4"));
+                .header("Content-Disposition", containsString("inline; filename=\"proposta-"))
+                .body(containsString("%PDF-"));
     }
 
     private String registerAndToken(String prefix) {
@@ -249,6 +292,33 @@ class PublicQuoteResourceTest {
                 .body("total", greaterThan(0.0F))
                 .extract()
                 .path("id");
+    }
+
+    private void updateCompanySettings(String token) {
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("tradeName", "Comercial Pública");
+        settings.put("legalName", "Comercial Pública LTDA");
+        settings.put("document", "12.345.678/0001-90");
+        settings.put("email", "publica@stockflow.test");
+        settings.put("phone", "(47) 3333-3333");
+        settings.put("whatsapp", "(47) 99999-9999");
+        settings.put("address", "Rua Pública");
+        settings.put("addressNumber", "123");
+        settings.put("city", "Joinville");
+        settings.put("state", "SC");
+        settings.put("zipCode", "89200-000");
+        settings.put("defaultQuoteNotes", "Observação pública padrão");
+        settings.put("defaultPaymentTerms", "Pagamento público padrão");
+        settings.put("defaultQuoteValidityDays", 7);
+
+        given()
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token)
+                .body(settings)
+                .when()
+                .put("/company/settings")
+                .then()
+                .statusCode(200);
     }
 
     private Map<String, Object> quote(String customerId, String productId, String serviceId, String validUntil) {

@@ -70,6 +70,22 @@ public class QuoteEntity extends PanacheEntityBase {
     @JoinColumn(name = "created_by", nullable = false)
     public UserEntity createdBy;
 
+    @Column(name = "customer_approved_at")
+    public OffsetDateTime customerApprovedAt;
+
+    @Column(name = "customer_rejected_at")
+    public OffsetDateTime customerRejectedAt;
+
+    @Column(name = "completed_at")
+    public OffsetDateTime completedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "completed_by")
+    public UserEntity completedBy;
+
+    @Column(name = "stock_deducted", nullable = false)
+    public boolean stockDeducted = false;
+
     @Column(name = "created_at", nullable = false)
     public OffsetDateTime createdAt;
 

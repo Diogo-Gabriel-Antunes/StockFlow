@@ -31,7 +31,12 @@ export type CustomerInput = {
 
 export type CustomerPage = {
   items: Customer[];
+  content?: Customer[];
   page: number;
   size: number;
   total: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
 };

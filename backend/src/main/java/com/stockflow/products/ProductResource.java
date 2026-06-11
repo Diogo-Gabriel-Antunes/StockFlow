@@ -26,10 +26,14 @@ public class ProductResource {
     @GET
     public ProductPageResponse list(
             @QueryParam("search") String search,
+            @QueryParam("active") Boolean active,
+            @QueryParam("lowStock") Boolean lowStock,
+            @QueryParam("sort") String sort,
+            @QueryParam("direction") String direction,
             @QueryParam("page") Integer page,
             @QueryParam("size") Integer size
     ) {
-        return productService.list(search, page, size);
+        return productService.list(search, active, lowStock, sort, direction, page, size);
     }
 
     @POST

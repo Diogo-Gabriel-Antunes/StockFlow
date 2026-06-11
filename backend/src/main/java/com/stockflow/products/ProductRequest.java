@@ -10,6 +10,8 @@ public record ProductRequest(
         @NotBlank @Size(max = 160) String name,
         @Size(max = 80) String sku,
         @Size(max = 120) String category,
+        @Size(max = 80) String barcode,
+        @Size(max = 120) String referenceCode,
         @NotNull @DecimalMin("0.00") BigDecimal costPrice,
         @NotNull @DecimalMin("0.00") BigDecimal salePrice,
         @NotBlank @Size(max = 20) String unit,

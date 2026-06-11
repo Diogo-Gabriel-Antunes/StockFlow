@@ -30,6 +30,6 @@ class ReplenishmentCalculatorTest {
         assertTrue(calculator.isCritical(equalToMinimum));
         assertFalse(calculator.isCritical(healthy));
         assertEquals(new BigDecimal("3.000"), calculator.suggestedPurchaseQuantity(critical));
-        assertEquals(0, BigDecimal.ZERO.compareTo(calculator.suggestedPurchaseQuantity(equalToMinimum)));
+        assertEquals(0, BigDecimal.ONE.compareTo(calculator.suggestedPurchaseQuantity(equalToMinimum)));
     }
 }

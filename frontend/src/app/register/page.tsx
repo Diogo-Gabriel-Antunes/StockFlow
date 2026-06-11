@@ -10,6 +10,7 @@ import { register as registerAccount } from "@/features/auth/auth-service";
 import { storeToken } from "@/features/auth/auth-storage";
 import { registerSchema } from "@/features/auth/schemas";
 import type { RegisterInput } from "@/features/auth/types";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -45,10 +46,13 @@ export default function RegisterPage() {
     try {
       const response = await registerAccount(parsed.data);
       storeToken(response.token);
+      appToast.success("Conta criada com sucesso.");
       router.push("/dashboard");
       router.refresh();
-    } catch {
-      setFormError("Não foi possível criar a conta com esses dados.");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Não foi possível criar a conta com esses dados.");
+      setFormError(message);
+      appToast.error(message);
     }
   }
 

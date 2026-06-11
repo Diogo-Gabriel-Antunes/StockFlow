@@ -29,6 +29,8 @@ describe("ProductForm", () => {
       name: "Produto Teste",
       sku: "SKU-1",
       category: "Pet",
+      barcode: "7891000000010",
+      referenceCode: "REF-001",
       costPrice: 10,
       salePrice: 20,
       unit: "UN",
@@ -56,6 +58,8 @@ describe("ProductForm", () => {
         "token-test",
         expect.objectContaining({
           name: "Produto Teste",
+          barcode: undefined,
+          referenceCode: undefined,
           salePrice: 20,
           unit: "UN",
         }),

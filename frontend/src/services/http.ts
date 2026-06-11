@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { clearToken } from "@/features/auth/auth-storage";
+import { appToast } from "@/lib/toast";
 
 type RequestOptions = RequestInit & {
   token?: string;
@@ -60,6 +61,7 @@ function handleUnauthorized() {
     "stockflow_session_message",
     "Sua sessão expirou. Faça login novamente.",
   );
+  appToast.warning("Sua sessão expirou. Faça login novamente.");
   if (window.location.pathname !== "/login") {
     window.location.assign("/login");
   }

@@ -18,6 +18,7 @@ public record StockMovementResponse(
         String referenceType,
         UUID referenceId,
         UUID createdBy,
+        String createdByName,
         OffsetDateTime createdAt
 ) {
     public static StockMovementResponse from(StockMovementEntity movement) {
@@ -35,6 +36,7 @@ public record StockMovementResponse(
                 movement.referenceType,
                 movement.referenceId,
                 movement.createdBy.id,
+                movement.createdBy.name,
                 movement.createdAt
         );
     }

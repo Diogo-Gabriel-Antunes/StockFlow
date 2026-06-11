@@ -30,7 +30,6 @@ services:
         condition: service_healthy
     environment:
       QUARKUS_HTTP_PORT: ${QUARKUS_HTTP_PORT:-8080}
-      QUARKUS_HTTP_ROOT_PATH: ${QUARKUS_HTTP_ROOT_PATH:-/api}
       QUARKUS_HTTP_NON_APPLICATION_ROOT_PATH: ${QUARKUS_HTTP_NON_APPLICATION_ROOT_PATH:-/q}
       QUARKUS_PROFILE: ${QUARKUS_PROFILE:-dev}
       DB_JDBC_URL: ${DB_JDBC_URL:-jdbc:postgresql://postgres:5432/stockflow}
@@ -45,6 +44,8 @@ services:
       STORAGE_LOCAL_PATH: ${STORAGE_LOCAL_PATH:-/app/storage}
     expose:
       - "8080"
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
     volumes:
       - stockflow_backend_storage:/app/storage
     networks:

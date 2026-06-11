@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,14 +13,34 @@ import java.util.UUID;
 @ApplicationScoped
 public class CustomerRepository implements PanacheRepositoryBase<CustomerEntity, UUID> {
 
-    public List<CustomerEntity> listActiveByCompany(UUID companyId, String search, int page, int size) {
-        return find(query(search), sort(), parameters(companyId, search))
+    public List<CustomerEntity> listActiveByCompany(
+            UUID companyId,
+            String search,
+            String sort,
+            String direction,
+            int page,
+            int size
+    ) {
+        return find(query(search), sort(sort, direction), parameters(companyId, search))
                 .page(Page.of(page, size))
                 .list();
     }
 
+    public List<CustomerEntity> listActiveByCompany(UUID companyId, String search, int page, int size) {
+        return listActiveByCompany(companyId, search, "name", "asc", page, size);
+    }
+
     public long countActiveByCompany(UUID companyId, String search) {
         return count(query(search), parameters(companyId, search));
+    }
+
+    public long countActiveByCompanyCreatedBetween(UUID companyId, OffsetDateTime start, OffsetDateTime end) {
+        return count(
+                "company.id = ?1 and active = true and createdAt >= ?2 and createdAt < ?3",
+                companyId,
+                start,
+                end
+        );
     }
 
     public Optional<CustomerEntity> findActiveByCompanyAndId(UUID companyId, UUID id) {
@@ -45,6 +66,7 @@ public class CustomerRepository implements PanacheRepositoryBase<CustomerEntity,
                     or lower(coalesce(email, '')) like :search
                     or lower(coalesce(phone, '')) like :search
                     or lower(coalesce(whatsapp, '')) like :search
+                    or lower(coalesce(city, '')) like :search
                 )
                 """;
     }
@@ -57,7 +79,17 @@ public class CustomerRepository implements PanacheRepositoryBase<CustomerEntity,
         return parameters;
     }
 
-    private Sort sort() {
-        return Sort.by("name").ascending().and("createdAt").descending();
+    private Sort sort(String sort, String direction) {
+        String field = switch (sort == null ? "" : sort) {
+            case "createdAt" -> "createdAt";
+            case "city" -> "city";
+            default -> "name";
+        };
+        Sort.Direction safeDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.Descending : Sort.Direction.Ascending;
+        Sort safeSort = Sort.by(field, safeDirection);
+        if (!"name".equals(field)) {
+            safeSort = safeSort.and("name", Sort.Direction.Ascending);
+        }
+        return safeSort;
     }
 }

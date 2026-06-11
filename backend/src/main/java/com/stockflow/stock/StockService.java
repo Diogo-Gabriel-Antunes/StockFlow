@@ -11,13 +11,14 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
 public class StockService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Inject
@@ -33,36 +34,45 @@ public class StockService {
     AuthenticatedTenant authenticatedTenant;
 
     public StockMovementPageResponse listMovements(UUID productId, Integer page, Integer size) {
+        return listMovements(null, productId, null, null, null, null, null, page, size);
+    }
+
+    public StockMovementPageResponse listMovements(
+            String search,
+            UUID productId,
+            StockMovementType type,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            String sort,
+            String direction,
+            Integer page,
+            Integer size
+    ) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
         UUID companyId = authenticatedTenant.companyId();
 
         return new StockMovementPageResponse(
-                stockMovementRepository.listByCompany(companyId, productId, safePage, safeSize)
+                stockMovementRepository.listByCompany(companyId, search, productId, type, dateFrom, dateTo, sort, direction, safePage, safeSize)
                         .stream()
                         .map(StockMovementResponse::from)
                         .toList(),
                 safePage,
                 safeSize,
-                stockMovementRepository.countByCompany(companyId, productId)
+                stockMovementRepository.countByCompany(companyId, search, productId, type, dateFrom, dateTo)
         );
+    }
+
+    public StockMovementPageResponse listMovementsByProduct(UUID productId, Integer page, Integer size) {
+        findProduct(productId);
+        return listMovements(productId, page, size);
     }
 
     public List<LowStockProductResponse> listLowStock() {
         UUID companyId = authenticatedTenant.companyId();
-        return productRepository.find("company.id = ?1 and active = true and stockQuantity <= minimumStock", companyId)
-                .list()
+        return productRepository.listLowStockByCompany(companyId)
                 .stream()
-                .map(product -> new LowStockProductResponse(
-                        product.id,
-                        product.name,
-                        product.sku,
-                        product.category,
-                        product.unit,
-                        product.stockQuantity,
-                        product.minimumStock,
-                        product.minimumStock.subtract(product.stockQuantity).max(BigDecimal.ZERO)
-                ))
+                .map(LowStockProductResponse::from)
                 .toList();
     }
 
@@ -83,7 +93,7 @@ public class StockService {
         BigDecimal previousQuantity = product.stockQuantity;
         BigDecimal newQuantity = previousQuantity.subtract(request.quantity());
         if (newQuantity.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BadRequestException("Stock cannot be negative");
+            throw new BadRequestException("Estoque insuficiente para realizar a saída.");
         }
         return StockMovementResponse.from(saveMovement(product, StockMovementType.OUT, request.quantity(), previousQuantity, newQuantity, request.reason(), null, null));
     }

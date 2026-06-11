@@ -12,7 +12,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class ServiceItemService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Inject
@@ -25,18 +25,29 @@ public class ServiceItemService {
     AuthenticatedTenant authenticatedTenant;
 
     public ServiceItemPageResponse list(String search, Integer page, Integer size) {
+        return list(search, null, null, null, page, size);
+    }
+
+    public ServiceItemPageResponse list(
+            String search,
+            Boolean active,
+            String sort,
+            String direction,
+            Integer page,
+            Integer size
+    ) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
         UUID companyId = authenticatedTenant.companyId();
 
         return new ServiceItemPageResponse(
-                serviceItemRepository.listActiveByCompany(companyId, search, safePage, safeSize)
+                serviceItemRepository.listByCompany(companyId, search, active, sort, direction, safePage, safeSize)
                         .stream()
                         .map(ServiceItemResponse::from)
                         .toList(),
                 safePage,
                 safeSize,
-                serviceItemRepository.countActiveByCompany(companyId, search)
+                serviceItemRepository.countByCompany(companyId, search, active)
         );
     }
 

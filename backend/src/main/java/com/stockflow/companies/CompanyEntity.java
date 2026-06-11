@@ -20,9 +20,39 @@ public class CompanyEntity extends PanacheEntityBase {
     @Column(nullable = false)
     public String name;
 
+    @Column(name = "trade_name")
+    public String tradeName;
+
+    @Column(name = "legal_name")
+    public String legalName;
+
     public String document;
     public String email;
     public String phone;
+    public String whatsapp;
+    public String address;
+
+    @Column(name = "address_number")
+    public String addressNumber;
+
+    @Column(name = "address_complement")
+    public String addressComplement;
+
+    public String neighborhood;
+    public String city;
+    public String state;
+
+    @Column(name = "zip_code")
+    public String zipCode;
+
+    @Column(name = "default_quote_notes")
+    public String defaultQuoteNotes;
+
+    @Column(name = "default_payment_terms")
+    public String defaultPaymentTerms;
+
+    @Column(name = "default_quote_validity_days")
+    public Integer defaultQuoteValidityDays;
 
     @Column(name = "logo_url")
     public String logoUrl;

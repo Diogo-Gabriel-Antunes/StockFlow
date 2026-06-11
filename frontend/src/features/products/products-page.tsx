@@ -10,8 +10,10 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { PageHeader } from "@/components/ui/page-header";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   DataTable,
   EmptyState,
@@ -24,11 +26,13 @@ import {
   TableShell,
 } from "@/components/ui/table";
 import { clearToken, getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { deleteProduct, listProducts } from "./product-service";
 import { ProductForm } from "./product-form";
 import type { Product } from "./types";
 
 type ModalMode = "create" | "edit";
+type ActiveFilter = "all" | "active" | "inactive";
 
 export function ProductsPage() {
   const router = useRouter();
@@ -38,19 +42,38 @@ export function ProductsPage() {
   );
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("active");
+  const [lowStock, setLowStock] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>("create");
   const [selectedItem, setSelectedItem] = useState<Product | undefined>();
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const products = useQuery({
-    queryKey: ["products", submittedSearch, token],
-    queryFn: () => listProducts(token ?? "", { search: submittedSearch }),
+    queryKey: ["products", submittedSearch, activeFilter, lowStock, page, size, token],
+    queryFn: () =>
+      listProducts(token ?? "", {
+        active: activeFilter === "all" ? undefined : activeFilter === "active",
+        lowStock: lowStock || undefined,
+        page,
+        search: submittedSearch,
+        size,
+      }),
     enabled: Boolean(token),
   });
 
   const removeProduct = useMutation({
     mutationFn: (id: string) => deleteProduct(token ?? "", id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    onSuccess: () => {
+      appToast.success("Produto inativado com sucesso.");
+      setProductToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => {
+      appToast.error(getApiErrorMessage(error, "Não foi possível inativar o produto."));
+    },
   });
 
   useEffect(() => {
@@ -60,9 +83,31 @@ export function ProductsPage() {
     }
   }, [router, token]);
 
+  useEffect(() => {
+    if (products.isError) {
+      appToast.error("Não foi possível carregar os produtos.");
+    }
+  }, [products.isError]);
+
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPage(0);
     setSubmittedSearch(search.trim());
+  }
+
+  function changeActiveFilter(value: ActiveFilter) {
+    setPage(0);
+    setActiveFilter(value);
+  }
+
+  function changeLowStock(value: boolean) {
+    setPage(0);
+    setLowStock(value);
+  }
+
+  function changeSize(value: number) {
+    setPage(0);
+    setSize(value);
   }
 
   function openCreateModal() {
@@ -88,13 +133,9 @@ export function ProductsPage() {
     queryClient.invalidateQueries({ queryKey: ["products"] });
   }
 
-  function confirmDelete(product: Product) {
-    if (
-      window.confirm(
-        "Tem certeza que deseja continuar? Esta ação pode afetar dados relacionados.",
-      )
-    ) {
-      removeProduct.mutate(product.id);
+  function confirmDelete() {
+    if (productToDelete) {
+      removeProduct.mutate(productToDelete.id);
     }
   }
 
@@ -116,10 +157,29 @@ export function ProductsPage() {
         onSubmit={submitSearch}
         search={{
           onChange: setSearch,
-          placeholder: "Buscar por nome, SKU ou categoria",
+          placeholder: "Buscar por nome, SKU, código de barras ou referência...",
           value: search,
         }}
-      />
+      >
+        <select
+          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
+          onChange={(event) => changeActiveFilter(event.target.value as ActiveFilter)}
+          value={activeFilter}
+        >
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+          <option value="all">Todos</option>
+        </select>
+        <label className="flex h-11 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-medium text-ink dark:bg-slate-950/40">
+          <input
+            checked={lowStock}
+            className="h-4 w-4 accent-primary"
+            onChange={(event) => changeLowStock(event.target.checked)}
+            type="checkbox"
+          />
+          Estoque baixo
+        </label>
+      </DataToolbar>
 
       <Card className="overflow-hidden">
         {products.isLoading ? <LoadingState text="Carregando produtos..." /> : null}
@@ -155,7 +215,7 @@ export function ProductsPage() {
                   <TableRow key={product.id}>
                     <TableCell primary>
                       <p className="font-semibold text-ink">{product.name}</p>
-                      <p className="text-xs text-muted">{product.sku ?? product.category ?? "-"}</p>
+                      <p className="text-xs text-muted">{productDetails(product)}</p>
                     </TableCell>
                     <TableCell>{formatMoney(product.salePrice)}</TableCell>
                     <TableCell>
@@ -180,7 +240,7 @@ export function ProductsPage() {
                         <ActionButton
                           aria-label={`Excluir ${product.name}`}
                           disabled={removeProduct.isPending}
-                          onClick={() => confirmDelete(product)}
+                          onClick={() => setProductToDelete(product)}
                           type="button"
                           variant="danger"
                         >
@@ -193,6 +253,16 @@ export function ProductsPage() {
               </tbody>
             </DataTable>
           </TableShell>
+        ) : null}
+        {products.data ? (
+          <PaginationControls
+            onPageChange={setPage}
+            onSizeChange={changeSize}
+            page={products.data.page}
+            size={products.data.size}
+            total={products.data.totalElements ?? products.data.total}
+            totalPages={products.data.totalPages}
+          />
         ) : null}
       </Card>
       <Modal
@@ -208,6 +278,17 @@ export function ProductsPage() {
           product={selectedItem}
         />
       </Modal>
+      <ConfirmDialog
+        confirmLabel="Excluir"
+        description="Tem certeza que deseja excluir este produto? Esta ação não poderá ser desfeita."
+        loading={removeProduct.isPending}
+        loadingLabel="Excluindo..."
+        onCancel={() => setProductToDelete(null)}
+        onConfirm={confirmDelete}
+        open={Boolean(productToDelete)}
+        title="Excluir produto"
+        variant="danger"
+      />
     </AppLayout>
   );
 }
@@ -217,4 +298,15 @@ function formatMoney(value: number) {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+function productDetails(product: Product) {
+  const details = [
+    product.sku ? `SKU ${product.sku}` : null,
+    product.barcode ? `Barras ${product.barcode}` : null,
+    product.referenceCode ? `Ref. ${product.referenceCode}` : null,
+    product.category,
+  ].filter(Boolean);
+
+  return details.length > 0 ? details.join(" · ") : "-";
 }

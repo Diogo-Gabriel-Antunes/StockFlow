@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { TextField } from "@/components/ui/text-field";
 import { getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { createProduct, updateProduct } from "./product-service";
 import { productSchema } from "./schemas";
 import type { Product, ProductFormInput, ProductInput } from "./types";
@@ -20,6 +21,8 @@ const emptyValues: ProductFormInput = {
   name: "",
   sku: "",
   category: "",
+  barcode: "",
+  referenceCode: "",
   costPrice: "0",
   salePrice: "0",
   unit: "UN",
@@ -41,6 +44,8 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
           name: product.name,
           sku: product.sku ?? "",
           category: product.category ?? "",
+          barcode: product.barcode ?? "",
+          referenceCode: product.referenceCode ?? "",
           costPrice: String(product.costPrice),
           salePrice: String(product.salePrice),
           unit: product.unit,
@@ -72,14 +77,17 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
       const savedProduct = product
         ? await updateProduct(token, product.id, payload)
         : await createProduct(token, payload);
+      appToast.success(product ? "Produto atualizado com sucesso." : "Produto criado com sucesso.");
       if (onSaved) {
         onSaved(savedProduct);
       } else {
         router.push("/products");
         router.refresh();
       }
-    } catch {
-      setFormError("Não foi possível salvar o produto.");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Não foi possível salvar o produto.");
+      setFormError(message);
+      appToast.error(message);
     }
   }
 
@@ -89,6 +97,8 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
         <TextField error={errors.name?.message} label="Nome" {...register("name")} />
         <TextField label="SKU" {...register("sku")} />
         <TextField label="Categoria" {...register("category")} />
+        <TextField label="Código de barras" {...register("barcode")} />
+        <TextField label="Código de referência" {...register("referenceCode")} />
         <TextField error={errors.unit?.message} label="Unidade" {...register("unit")} />
       </div>
 
@@ -163,6 +173,8 @@ function normalizeInput(input: ProductFormInput): ProductInput {
     name: input.name.trim(),
     sku: input.sku?.trim() || undefined,
     category: input.category?.trim() || undefined,
+    barcode: input.barcode?.trim() || undefined,
+    referenceCode: input.referenceCode?.trim() || undefined,
     costPrice: Number(input.costPrice),
     salePrice: Number(input.salePrice),
     unit: input.unit.trim(),

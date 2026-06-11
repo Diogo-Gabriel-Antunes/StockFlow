@@ -3,18 +3,42 @@ import { env } from "@/lib/env";
 import type { PublicQuote, PublicQuoteLink, Quote, QuoteInput, QuotePage, QuoteStatus } from "./types";
 
 type ListParams = {
+  customerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
   status?: QuoteStatus | "";
   page?: number;
   size?: number;
+  sort?: string;
+  direction?: "asc" | "desc";
 };
 
 export function listQuotes(token: string, params: ListParams = {}) {
   const searchParams = new URLSearchParams();
+  if (params.search) {
+    searchParams.set("search", params.search);
+  }
   if (params.status) {
     searchParams.set("status", params.status);
   }
+  if (params.customerId) {
+    searchParams.set("customerId", params.customerId);
+  }
+  if (params.dateFrom) {
+    searchParams.set("dateFrom", params.dateFrom);
+  }
+  if (params.dateTo) {
+    searchParams.set("dateTo", params.dateTo);
+  }
+  if (params.sort) {
+    searchParams.set("sort", params.sort);
+  }
+  if (params.direction) {
+    searchParams.set("direction", params.direction);
+  }
   searchParams.set("page", String(params.page ?? 0));
-  searchParams.set("size", String(params.size ?? 20));
+  searchParams.set("size", String(params.size ?? 10));
 
   return apiRequest<QuotePage>(`/quotes?${searchParams.toString()}`, { token });
 }
@@ -54,7 +78,14 @@ export function sendQuote(token: string, id: string) {
 }
 
 export function approveQuote(token: string, id: string) {
-  return apiRequest<Quote>(`/quotes/${id}/approve`, {
+  return apiRequest<Quote>(`/quotes/${id}/mark-customer-approved`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function completeQuote(token: string, id: string) {
+  return apiRequest<Quote>(`/quotes/${id}/complete`, {
     method: "POST",
     token,
   });
@@ -62,6 +93,13 @@ export function approveQuote(token: string, id: string) {
 
 export function rejectQuote(token: string, id: string) {
   return apiRequest<Quote>(`/quotes/${id}/reject`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function cancelQuote(token: string, id: string) {
+  return apiRequest<Quote>(`/quotes/${id}/cancel`, {
     method: "POST",
     token,
   });

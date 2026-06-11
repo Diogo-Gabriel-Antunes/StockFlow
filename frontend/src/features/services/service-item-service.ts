@@ -2,9 +2,12 @@ import { apiRequest } from "@/services/http";
 import type { ServiceItem, ServiceItemInput, ServiceItemPage } from "./types";
 
 type ListParams = {
+  active?: boolean;
   search?: string;
   page?: number;
   size?: number;
+  sort?: string;
+  direction?: "asc" | "desc";
 };
 
 export function listServiceItems(token: string, params: ListParams = {}) {
@@ -12,8 +15,17 @@ export function listServiceItems(token: string, params: ListParams = {}) {
   if (params.search) {
     searchParams.set("search", params.search);
   }
+  if (params.active !== undefined) {
+    searchParams.set("active", String(params.active));
+  }
+  if (params.sort) {
+    searchParams.set("sort", params.sort);
+  }
+  if (params.direction) {
+    searchParams.set("direction", params.direction);
+  }
   searchParams.set("page", String(params.page ?? 0));
-  searchParams.set("size", String(params.size ?? 20));
+  searchParams.set("size", String(params.size ?? 10));
 
   return apiRequest<ServiceItemPage>(`/services?${searchParams.toString()}`, { token });
 }

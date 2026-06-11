@@ -12,6 +12,9 @@ public class ReplenishmentCalculator {
     }
 
     public BigDecimal suggestedPurchaseQuantity(ProductEntity product) {
+        if (product.stockQuantity.compareTo(product.minimumStock) == 0) {
+            return BigDecimal.ONE;
+        }
         return product.minimumStock.subtract(product.stockQuantity).max(BigDecimal.ZERO);
     }
 }

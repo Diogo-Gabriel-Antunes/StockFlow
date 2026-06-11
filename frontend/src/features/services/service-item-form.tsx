@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { TextField } from "@/components/ui/text-field";
 import { getToken } from "@/features/auth/auth-storage";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { createServiceItem, updateServiceItem } from "./service-item-service";
 import { serviceItemSchema } from "./schemas";
 import type { ServiceItem, ServiceItemFormInput, ServiceItemInput } from "./types";
@@ -64,14 +65,17 @@ export function ServiceItemForm({ onCancel, onSaved, serviceItem }: ServiceItemF
       const savedServiceItem = serviceItem
         ? await updateServiceItem(token, serviceItem.id, payload)
         : await createServiceItem(token, payload);
+      appToast.success(serviceItem ? "Serviço atualizado com sucesso." : "Serviço criado com sucesso.");
       if (onSaved) {
         onSaved(savedServiceItem);
       } else {
         router.push("/services");
         router.refresh();
       }
-    } catch {
-      setFormError("Não foi possível salvar o serviço.");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Não foi possível salvar o serviço.");
+      setFormError(message);
+      appToast.error(message);
     }
   }
 
