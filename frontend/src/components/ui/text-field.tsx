@@ -12,11 +12,11 @@ export function TextField({ label, error, id, ...props }: TextFieldProps) {
     <label className="grid gap-1.5" htmlFor={fieldId}>
       <span className="text-sm font-medium text-ink">{label}</span>
       <input
-        className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-slate-500"
+        className="h-11 rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-muted"
         id={fieldId}
         {...props}
       />
-      {error ? <span className="text-xs font-medium text-red-700">{error}</span> : null}
+      {error ? <span className="text-xs font-medium text-red-300">{error}</span> : null}
     </label>
   );
 }

@@ -40,7 +40,7 @@ export default function EditServicePage() {
       <section className="rounded-lg border border-border bg-panel p-5 shadow-subtle">
         {serviceItem.isLoading ? <p className="text-sm text-muted">Carregando serviço...</p> : null}
         {serviceItem.isError ? (
-          <p className="text-sm font-medium text-red-700">Não foi possível carregar o serviço.</p>
+          <p className="text-sm font-medium text-red-300">Não foi possível carregar o serviço.</p>
         ) : null}
         {serviceItem.data ? <ServiceItemForm serviceItem={serviceItem.data} /> : null}
       </section>

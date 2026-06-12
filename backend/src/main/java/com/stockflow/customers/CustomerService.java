@@ -7,11 +7,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import java.security.SecureRandom;
+import java.time.OffsetDateTime;
+import java.util.Base64;
 import java.util.UUID;
 
 @ApplicationScoped
 public class CustomerService {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -24,10 +28,12 @@ public class CustomerService {
     @Inject
     AuthenticatedTenant authenticatedTenant;
 
+    @Transactional
     public CustomerPageResponse list(String search, Integer page, Integer size) {
         return list(search, null, null, page, size);
     }
 
+    @Transactional
     public CustomerPageResponse list(String search, String sort, String direction, Integer page, Integer size) {
         int safePage = Math.max(page == null ? 0 : page, 0);
         int safeSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
@@ -36,6 +42,7 @@ public class CustomerService {
         return new CustomerPageResponse(
                 customerRepository.listActiveByCompany(companyId, search, sort, direction, safePage, safeSize)
                         .stream()
+                        .peek(this::ensurePortalToken)
                         .map(CustomerResponse::from)
                         .toList(),
                 safePage,
@@ -44,6 +51,7 @@ public class CustomerService {
         );
     }
 
+    @Transactional
     public CustomerResponse get(UUID id) {
         return CustomerResponse.from(findCurrentCompanyCustomer(id));
     }
@@ -57,6 +65,7 @@ public class CustomerService {
         customer.company = company;
         applyRequest(customer, request);
         customer.active = true;
+        ensurePortalToken(customer);
         customerRepository.persist(customer);
         return CustomerResponse.from(customer);
     }
@@ -75,8 +84,10 @@ public class CustomerService {
     }
 
     private CustomerEntity findCurrentCompanyCustomer(UUID id) {
-        return customerRepository.findActiveByCompanyAndId(authenticatedTenant.companyId(), id)
+        CustomerEntity customer = customerRepository.findActiveByCompanyAndId(authenticatedTenant.companyId(), id)
                 .orElseThrow(NotFoundException::new);
+        ensurePortalToken(customer);
+        return customer;
     }
 
     private void applyRequest(CustomerEntity customer, CustomerRequest request) {
@@ -96,5 +107,20 @@ public class CustomerService {
             return null;
         }
         return value.trim();
+    }
+
+    private void ensurePortalToken(CustomerEntity customer) {
+        if (customer.portalToken != null && !customer.portalToken.isBlank()) {
+            return;
+        }
+        customer.portalToken = newPortalToken();
+        customer.portalEnabled = true;
+        customer.portalTokenCreatedAt = OffsetDateTime.now();
+    }
+
+    private String newPortalToken() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

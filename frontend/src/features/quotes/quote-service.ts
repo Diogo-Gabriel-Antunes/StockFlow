@@ -126,9 +126,10 @@ export function approvePublicQuote(token: string) {
   });
 }
 
-export function rejectPublicQuote(token: string) {
+export function rejectPublicQuote(token: string, reason?: string) {
   return apiRequest<PublicQuote>(`/public/quotes/${token}/reject`, {
     method: "POST",
+    body: JSON.stringify({ reason: reason?.trim() || undefined }),
   });
 }
 

@@ -15,7 +15,7 @@ export function DataTable({ children }: { children: ReactNode }) {
 
 export function TableHead({ children }: { children: ReactNode }) {
   return (
-    <thead className="border-b border-border bg-slate-50/90 text-xs uppercase tracking-wide text-muted dark:bg-slate-900/70">
+    <thead className="border-b border-border bg-slate-900/70 text-xs uppercase tracking-wide text-muted dark:bg-slate-900/70">
       {children}
     </thead>
   );
@@ -23,7 +23,7 @@ export function TableHead({ children }: { children: ReactNode }) {
 
 export function TableRow({ children }: { children: ReactNode }) {
   return (
-    <tr className="border-b border-border last:border-b-0 transition hover:bg-slate-50/80 dark:hover:bg-slate-900/60">
+    <tr className="border-b border-border last:border-b-0 transition hover:bg-slate-900/60 dark:hover:bg-slate-900/60">
       {children}
     </tr>
   );
@@ -78,7 +78,7 @@ export function EmptyState({
 }) {
   return (
     <div className="grid justify-items-center gap-3 px-6 py-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-slate-50 text-muted dark:bg-slate-900">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-slate-900 text-muted dark:bg-slate-900">
         {icon ?? <Inbox size={20} aria-hidden="true" />}
       </div>
       <div>
@@ -103,7 +103,7 @@ export function LoadingState({ text }: { text: string }) {
 
 export function ErrorState({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 p-6 text-sm font-medium text-red-700 dark:text-red-300">
+    <div className="flex items-center gap-2 p-6 text-sm font-medium text-red-300 dark:text-red-300">
       <AlertCircle size={16} aria-hidden="true" />
       {text}
     </div>

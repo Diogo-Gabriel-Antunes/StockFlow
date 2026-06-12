@@ -3,6 +3,7 @@ package com.stockflow.quotes;
 import com.stockflow.stock.StockMovementEntity;
 import com.stockflow.stock.StockMovementRepository;
 import com.stockflow.stock.StockMovementType;
+import com.stockflow.notifications.BusinessEventService;
 import com.stockflow.users.UserEntity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,6 +21,9 @@ public class QuoteApprovalService {
     @Inject
     StockMovementRepository stockMovementRepository;
 
+    @Inject
+    BusinessEventService businessEventService;
+
     public QuoteEntity markCustomerApproved(QuoteEntity quote) {
         if (quote.validUntil != null && quote.validUntil.isBefore(LocalDate.now())) {
             quote.status = QuoteStatus.EXPIRED;
@@ -36,6 +40,7 @@ public class QuoteApprovalService {
         }
         quote.status = QuoteStatus.CUSTOMER_APPROVED;
         quote.customerApprovedAt = OffsetDateTime.now();
+        quote.customerDecisionAt = quote.customerApprovedAt;
         return quote;
     }
 
@@ -99,6 +104,8 @@ public class QuoteApprovalService {
         movement.referenceId = quote.id;
         movement.createdBy = completedBy;
         stockMovementRepository.persist(movement);
+        businessEventService.stockLow(deduction.product, previousQuantity, newQuantity);
+        businessEventService.stockOut(deduction.product, previousQuantity, newQuantity);
     }
 
     private boolean isFinal(QuoteStatus status) {

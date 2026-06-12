@@ -40,7 +40,7 @@ export default function EditProductPage() {
       <section className="rounded-lg border border-border bg-panel p-5 shadow-subtle">
         {product.isLoading ? <p className="text-sm text-muted">Carregando produto...</p> : null}
         {product.isError ? (
-          <p className="text-sm font-medium text-red-700">Não foi possível carregar o produto.</p>
+          <p className="text-sm font-medium text-red-300">Não foi possível carregar o produto.</p>
         ) : null}
         {product.data ? <ProductForm product={product.data} /> : null}
       </section>

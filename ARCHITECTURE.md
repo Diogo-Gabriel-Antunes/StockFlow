@@ -59,6 +59,9 @@ Pacotes principais em `backend/src/main/java/com/stockflow`:
 - `stock`: estoque, movimentacoes e estoque baixo.
 - `quotes`: orcamentos e regras internas.
 - `publicquotes`: token publico, proposta publica e PDF.
+- `customerportal`: portal publico do cliente por token.
+- `quoterequests`: solicitacoes de orcamento do cliente e painel interno.
+- `notifications`: notificacoes, historico de atividades e eventos de negocio.
 - `replenishments`: reposicao/compras.
 - `dashboard`: indicadores.
 - `shared/security`: JWT, filtro de autenticacao e contexto multi-tenant.
@@ -73,6 +76,8 @@ Arquivos principais em `frontend/src`:
 - `features/products`: produtos.
 - `features/services`: servicos.
 - `features/quotes`: orcamentos e proposta publica.
+- `features/customer-portal`: portal do cliente, solicitacoes e painel interno de solicitacoes.
+- `features/notifications`: sino, pagina de notificacoes e historico de atividades.
 - `features/stock`: estoque, movimentacoes e baixo estoque.
 - `features/replenishments`: reposicao/compras.
 - `features/dashboard`: dashboard.
@@ -81,6 +86,10 @@ Arquivos principais em `frontend/src`:
 - `components/ui`: componentes visuais reutilizaveis.
 - `services/http.ts`: cliente HTTP.
 - `lib/toast.ts`: helper de notificacoes.
+
+O frontend usa interface fixa em modo dark. O `RootLayout` aplica `className="dark"` diretamente no elemento `html`, e as variaveis globais de `globals.css` usam valores escuros como padrao para evitar flash claro no carregamento. Nao ha provider, toggle ou persistencia de tema em `localStorage`.
+
+Novas telas devem usar os tokens Tailwind do projeto (`bg-page`, `bg-panel`, `text-ink`, `text-muted`, `border-border`) como base visual. Cores claras fixas podem aparecer apenas em variantes pontuais com contraste validado, nao como fundo principal da pagina ou de cards.
 
 ## Banco de dados e migrations
 
@@ -97,6 +106,9 @@ Migrations em `backend/src/main/resources/db/migration`:
 - `V9__product_codes.sql`
 - `V10__quote_completion_flow.sql`
 - `V11__company_commercial_settings.sql`
+- `V12__customer_portal_quote_requests.sql`
+- `V13__notifications_activity_logs.sql`
+- `V14__product_catalog_quote_request_products.sql`
 
 Entidades operacionais usam `company_id` para isolamento multi-tenant.
 
@@ -134,6 +146,13 @@ Rotas reais do backend:
 - `/stock/replenishment`
 - `/dashboard/summary`
 - `/company/settings`
+- `/public/customer-portal/{token}`
+- `/public/customer-portal/{token}/products`
+- `/public/customer-portal/{token}/products/search`
+- `/public/customer-portal/{token}/products/{productId}`
+- `/quote-requests`
+- `/notifications`
+- `/activity-logs`
 
 Rotas Quarkus nao devem receber prefixo `/api`.
 
@@ -190,6 +209,7 @@ Endpoints publicos:
 - Login.
 - Cadastro.
 - Proposta publica por token.
+- Portal do cliente por token.
 - Recursos Quarkus `/q/*`.
 
 ## Multi-tenant
@@ -294,6 +314,141 @@ Os campos comerciais sao usados em tres pontos:
 
 Upload de logo, storage de arquivos e templates customizaveis nao fazem parte da v1.
 
+## Portal do Cliente v1
+
+O Portal do Cliente usa o pacote backend `com.stockflow.customerportal` para endpoints publicos por token e o pacote `com.stockflow.quoterequests` para solicitacoes de orcamento.
+
+Campos adicionados em `customers`:
+
+- `portal_token`
+- `portal_enabled`
+- `portal_token_created_at`
+
+Entidades novas:
+
+- `QuoteRequestEntity` em `quote_requests`.
+- `QuoteRequestItemEntity` em `quote_request_items`.
+
+Campos relevantes adicionados:
+
+- `products.description`: descricao opcional exibida no catalogo publico.
+- `products.image_url`: URL opcional de imagem do produto, sem upload/storage nesta v1.
+- `quote_request_items.product_id`: referencia opcional ao produto selecionado.
+- `quote_request_items.product_name_snapshot`, `product_sku_snapshot`, `product_reference_snapshot`, `product_image_url_snapshot`: snapshot do produto no momento da solicitacao.
+
+Status de solicitacao:
+
+- `REQUESTED`
+- `IN_REVIEW`
+- `CONVERTED_TO_QUOTE`
+- `CANCELLED`
+
+Endpoints publicos reais:
+
+- `GET /public/customer-portal/{token}`
+- `GET /public/customer-portal/{token}/quotes`
+- `GET /public/customer-portal/{token}/quotes/{quoteId}`
+- `POST /public/customer-portal/{token}/quotes/{quoteId}/approve`
+- `POST /public/customer-portal/{token}/quotes/{quoteId}/reject`
+- `GET /public/customer-portal/{token}/quotes/{quoteId}/pdf`
+- `GET /public/customer-portal/{token}/products`
+- `GET /public/customer-portal/{token}/products/search`
+- `GET /public/customer-portal/{token}/products/{productId}`
+- `GET /public/customer-portal/{token}/quote-requests`
+- `GET /public/customer-portal/{token}/quote-requests/{requestId}`
+- `POST /public/customer-portal/{token}/quote-requests`
+- `PUT /public/customer-portal/{token}/quote-requests/{requestId}`
+- `POST /public/customer-portal/{token}/quote-requests/{requestId}/cancel`
+
+Endpoints internos reais:
+
+- `GET /quote-requests`
+- `GET /quote-requests/{id}`
+- `PUT /quote-requests/{id}/status`
+- `POST /quote-requests/{id}/convert-to-quote`
+
+Seguranca publica:
+
+- O token identifica um unico cliente ativo com portal habilitado.
+- Endpoints publicos nunca aceitam `companyId` ou `customerId`.
+- Buscas de proposta e solicitacao sempre partem do cliente encontrado pelo token.
+- Rascunhos internos (`DRAFT`) nao sao expostos pelo portal.
+- DTOs publicos nao incluem preco de custo, estoque interno, margem ou movimentacoes.
+- O catalogo e o autocomplete publico retornam somente produtos ativos da empresa do cliente identificado pelo token.
+- Produto inativo, inexistente ou de outra empresa nao pode ser referenciado em solicitacao pelo portal.
+
+Conversao de solicitacao:
+
+- `QuoteRequestService` cria um `QuoteEntity` em `DRAFT`, vinculado ao cliente e empresa da solicitacao.
+- Os itens da solicitacao sao registrados nas observacoes do orcamento, com snapshots de produtos quando houver.
+- A empresa adiciona produtos/servicos e precos manualmente depois.
+- A conversao nao altera estoque.
+
+Frontend:
+
+- Portal publico: `frontend/src/app/customer-portal/[token]`.
+- Detalhe de proposta: `frontend/src/app/customer-portal/[token]/quotes/[quoteId]`.
+- Nova solicitacao: `frontend/src/app/customer-portal/[token]/quote-requests/new`.
+- Edicao/leitura de solicitacao: `frontend/src/app/customer-portal/[token]/quote-requests/[requestId]`.
+- Painel interno: `frontend/src/app/quote-requests`.
+
+## Central de Notificacoes e Historico de Atividades v1
+
+A central usa o pacote backend `com.stockflow.notifications`.
+
+Entidades novas:
+
+- `NotificationEntity` em `notifications`.
+- `ActivityLogEntity` em `activity_logs`.
+
+Services principais:
+
+- `NotificationService`: cria, lista, conta nao lidas e marca notificacoes como lidas.
+- `ActivityLogService`: registra e lista atividades da empresa autenticada.
+- `BusinessEventService`: ponto central para hooks de eventos de propostas, portal, solicitacoes, estoque e reposicao.
+
+Endpoints reais do backend:
+
+- `GET /notifications`
+- `GET /notifications/unread-count`
+- `POST /notifications/{id}/read`
+- `POST /notifications/read-all`
+- `GET /activity-logs`
+
+Rotas via Nginx/frontend:
+
+- `GET /api/notifications`
+- `GET /api/notifications/unread-count`
+- `POST /api/notifications/{id}/read`
+- `POST /api/notifications/read-all`
+- `GET /api/activity-logs`
+
+Modelo v1:
+
+- Notificacoes sao escopadas por empresa, nao por usuario individual.
+- `read_at` marca a notificacao como lida para a empresa toda.
+- Atividades registram ator `INTERNAL_USER`, `CUSTOMER` ou `SYSTEM`.
+- Endpoints internos usam o fluxo normal de JWT e `AuthenticatedTenant.companyId()`.
+- Eventos publicos por token usam a empresa do cliente/proposta resolvida pelo token.
+
+Eventos conectados:
+
+- Aprovacao e recusa publica de proposta.
+- Criacao, cancelamento e conversao de solicitacao de orcamento.
+- Conclusao interna de orcamento.
+- Movimentacoes que cruzam para estoque baixo ou zero.
+- Registro de reposicao.
+
+Para evitar spam, os eventos `STOCK_LOW` e `STOCK_OUT` sao emitidos apenas quando a quantidade cruza o limite. Movimentacoes posteriores enquanto o produto ja esta abaixo do minimo ou zerado nao geram repeticoes desse mesmo evento.
+
+Frontend:
+
+- Sino no layout autenticado via `NotificationBell`.
+- Servico HTTP em `features/notifications/notification-service.ts`.
+- Pagina interna `/notifications`.
+- Pagina interna `/activity-logs`.
+- Sem WebSocket nesta v1; o sino carrega ao montar e faz polling leve de contador a cada 60 segundos.
+
 ## Fluxo de requisicoes
 
 ### Ambiente via Nginx
@@ -345,11 +500,13 @@ Endpoints reais do backend:
 
 - `GET /quotes/{id}/pdf`
 - `GET /public/quotes/{token}/pdf`
+- `GET /public/customer-portal/{token}/quotes/{quoteId}/pdf`
 
 Rotas via Nginx/frontend:
 
 - `GET /api/quotes/{id}/pdf`
 - `GET /api/public/quotes/{token}/pdf`
+- `GET /api/public/customer-portal/{token}/quotes/{quoteId}/pdf`
 
 As respostas usam:
 
@@ -476,6 +633,8 @@ docker compose ps
 - PDF de proposta e gerado sob demanda pelo backend, sem storage nesta fase.
 - Reposicao / Compras v1 registra entrada de estoque, nao pedido de compra completo.
 - Configuracoes da Empresa v1 ficam na entidade `CompanyEntity` e alimentam PDF, proposta publica e padroes de novos orcamentos.
+- Portal do Cliente v1 usa token publico vinculado ao cliente, sem login/senha de cliente.
+- Cliente cria solicitacoes de orcamento, mas nao edita propostas oficiais enviadas.
 - Nao usar `window.alert` ou `window.confirm`; usar toast e modal.
 - Preferir menor alteracao segura e padroes existentes.
 

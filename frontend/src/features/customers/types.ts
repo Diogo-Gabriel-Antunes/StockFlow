@@ -12,6 +12,8 @@ export type Customer = {
   city: string | null;
   state: string | null;
   notes: string | null;
+  portalToken: string | null;
+  portalEnabled: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;

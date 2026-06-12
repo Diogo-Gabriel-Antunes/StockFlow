@@ -154,7 +154,7 @@ export function ServicesPage() {
         }}
       >
         <select
-          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
+          className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
           onChange={(event) => changeActiveFilter(event.target.value as ActiveFilter)}
           value={activeFilter}
         >

@@ -31,6 +31,10 @@ Cliente -> Produtos/Servicos -> Orcamento -> Proposta -> Aprovacao -> Conclusao 
 - Estoque baixo.
 - Orcamentos.
 - Link publico de proposta.
+- Portal do Cliente v1.
+- Proposta Publica v2.
+- Central de Notificacoes v1.
+- Historico de Atividades v1.
 - PDF profissional inicial de proposta/orcamento.
 - Reposicao / Compras v1.
 - Dashboard Gerencial v2.
@@ -64,8 +68,14 @@ Aplicar em:
 - Dashboard.
 - Reposicao.
 - Configuracoes da empresa.
+- Notificacoes.
+- Historico de atividades.
 
 Endpoints publicos de proposta usam token publico e nao exigem login, mas devem acessar somente a proposta vinculada ao token.
+
+Endpoints publicos do portal do cliente usam token publico do cliente e nao exigem login, mas devem acessar somente dados do cliente vinculado ao token.
+
+Notificacoes e atividades sao internas, exigem autenticacao e devem retornar apenas registros da empresa autenticada.
 
 ## Autenticacao
 
@@ -117,9 +127,11 @@ Endpoints publicos de proposta usam token publico e nao exigem login, mas devem 
 ### Campos principais
 
 - Nome.
+- Descricao.
 - SKU/codigo interno.
 - Codigo de barras opcional (`barcode`).
 - Codigo de referencia opcional (`referenceCode`).
+- URL de imagem opcional (`imageUrl`).
 - Categoria.
 - Preco de custo.
 - Preco de venda.
@@ -136,6 +148,9 @@ Endpoints publicos de proposta usam token publico e nao exigem login, mas devem 
 - Produto pode aparecer em estoque baixo quando `stockQuantity <= minimumStock`.
 - Codigo de barras e codigo de referencia nao sao obrigatorios.
 - Busca de produtos deve considerar nome, SKU, codigo de barras e codigo de referencia.
+- `imageUrl` e opcional, aceita no maximo 500 caracteres e deve iniciar com `http://` ou `https://` quando informado.
+- Produto novo fica ativo por padrao, salvo payload interno explicito.
+- Produto inativo continua acessivel no painel interno por filtros, mas nao aparece em catalogo publico ou autocomplete do portal.
 
 ## Servicos
 
@@ -284,10 +299,198 @@ Tambem existem:
 - Token invalido retorna erro conforme padrao atual.
 - A proposta publica exibe dados comerciais configurados da empresa, quando disponiveis.
 - Campos comerciais vazios nao devem gerar linhas ou textos vazios.
+- A Proposta Publica v2 usa layout comercial responsivo, com cabecalho profissional, tabela de itens, totais destacados e botoes claros.
+- Aprovar proposta exige confirmacao profissional.
+- Recusar proposta exige confirmacao profissional e aceita motivo opcional.
 - Link expirado marca orcamento como expirado.
 - Aprovar publicamente nao baixa estoque.
 - Recusar publicamente muda para `REJECTED`.
+- Recusa publica pode registrar `rejectionReason` e `customerDecisionAt`.
 - Status final nao deve permitir nova aprovacao/recusa.
+
+## Portal do Cliente
+
+### Endpoints publicos
+
+- `GET /public/customer-portal/{token}`
+- `GET /public/customer-portal/{token}/quotes`
+- `GET /public/customer-portal/{token}/quotes/{quoteId}`
+- `POST /public/customer-portal/{token}/quotes/{quoteId}/approve`
+- `POST /public/customer-portal/{token}/quotes/{quoteId}/reject`
+- `GET /public/customer-portal/{token}/quotes/{quoteId}/pdf`
+- `GET /public/customer-portal/{token}/products`
+- `GET /public/customer-portal/{token}/products/search`
+- `GET /public/customer-portal/{token}/products/{productId}`
+- `GET /public/customer-portal/{token}/quote-requests`
+- `GET /public/customer-portal/{token}/quote-requests/{requestId}`
+- `POST /public/customer-portal/{token}/quote-requests`
+- `PUT /public/customer-portal/{token}/quote-requests/{requestId}`
+- `POST /public/customer-portal/{token}/quote-requests/{requestId}/cancel`
+
+### Endpoints internos
+
+- `GET /quote-requests`
+- `GET /quote-requests/{id}`
+- `PUT /quote-requests/{id}/status`
+- `POST /quote-requests/{id}/convert-to-quote`
+
+### Token do cliente
+
+- Cada cliente possui `portalToken`.
+- Token e unico, publico, dificil de adivinhar e nao sequencial.
+- Token e gerado automaticamente ao criar cliente.
+- Clientes antigos recebem token sob demanda quando listados/detalhados internamente.
+- Token invalido retorna recurso nao encontrado.
+- Payload publico nunca aceita `companyId` ou `customerId`.
+
+### Regras de propostas no portal
+
+- Cliente ve apenas propostas do proprio cliente.
+- Cliente nao ve rascunhos internos (`DRAFT`).
+- Propostas em aberto usam `SENT` e `CUSTOMER_APPROVED`.
+- Historico usa `COMPLETED`, `REJECTED`, `CANCELLED` e `EXPIRED`.
+- Cliente so aprova proposta `SENT`.
+- Cliente so recusa proposta `SENT`.
+- Aprovacao vira `CUSTOMER_APPROVED` e nao baixa estoque.
+- Recusa vira `REJECTED`, pode salvar motivo e nao baixa estoque.
+- PDF pelo portal reutiliza o servico de PDF existente.
+
+### Solicitacoes de orcamento
+
+Status:
+
+- `REQUESTED`: solicitada.
+- `IN_REVIEW`: em analise.
+- `CONVERTED_TO_QUOTE`: convertida em orcamento.
+- `CANCELLED`: cancelada.
+
+Regras:
+
+- Cliente cria solicitacao com titulo e ao menos um item.
+- Item exige quantidade maior que zero.
+- Cada item deve ter `productId` de produto ativo da empresa do token ou descricao manual.
+- Se `productId` for informado, o produto deve existir, estar ativo e pertencer a empresa do cliente; produto inexistente, inativo ou de outra empresa retorna recurso nao encontrado.
+- Se `productId` for informado, a solicitacao salva snapshot de nome, SKU, referencia e imagem do produto.
+- Se `productId` nao for informado, descricao manual e obrigatoria.
+- Cliente edita ou cancela apenas em `REQUESTED`.
+- Empresa lista solicitacoes da propria empresa.
+- Empresa pode marcar `IN_REVIEW`.
+- Empresa pode cancelar solicitacoes ainda nao convertidas.
+- Empresa pode converter `REQUESTED` ou `IN_REVIEW` em orcamento oficial.
+- Conversao cria orcamento `DRAFT` vinculado ao cliente.
+- Conversao nao cria itens oficiais com preco e nao altera estoque.
+- Itens da solicitacao entram nas observacoes do orcamento rascunho para analise interna, incluindo produto selecionado, SKU, referencia, quantidade e observacao quando houver.
+
+### Catalogo publico de produtos
+
+Endpoints:
+
+- `GET /public/customer-portal/{token}/products`
+- `GET /public/customer-portal/{token}/products/search`
+- `GET /public/customer-portal/{token}/products/{productId}`
+
+Regras:
+
+- Endpoints nao exigem login, mas exigem token publico valido de cliente.
+- O token define o cliente e a empresa.
+- Retornam apenas produtos ativos da empresa do cliente.
+- Nao retornam preco de custo, estoque atual, estoque minimo ou movimentacoes.
+- A listagem aceita `page`, `size` e `search`.
+- O autocomplete aceita `query`, retorna lista vazia para menos de 3 caracteres e limita resultados.
+- A busca considera nome, SKU, categoria, codigo de barras e codigo de referencia conforme busca atual de produtos.
+
+## Central de Notificacoes e Historico de Atividades
+
+### Endpoints internos
+
+- `GET /notifications`
+- `GET /notifications/unread-count`
+- `POST /notifications/{id}/read`
+- `POST /notifications/read-all`
+- `GET /activity-logs`
+
+### Notificacoes
+
+Notificacoes sao por empresa nesta v1.
+
+Campos principais:
+
+- Empresa.
+- Tipo.
+- Titulo.
+- Mensagem.
+- Tipo e ID da entidade de origem.
+- Link interno sugerido.
+- Data de leitura.
+- Data de criacao.
+
+Tipos implementados:
+
+- `QUOTE_APPROVED`
+- `QUOTE_REJECTED`
+- `QUOTE_COMPLETED`
+- `QUOTE_REQUEST_CREATED`
+- `QUOTE_REQUEST_CANCELLED`
+- `QUOTE_REQUEST_CONVERTED`
+- `STOCK_LOW`
+- `STOCK_OUT`
+- `RESTOCK_REGISTERED`
+
+Regras:
+
+- Usuario autenticado ve apenas notificacoes da propria empresa.
+- Marcar uma notificacao como lida exige que ela pertenca a empresa autenticada.
+- Marcar todas como lidas afeta somente a empresa autenticada.
+- O contador de nao lidas considera apenas `readAt` vazio da empresa atual.
+- A v1 nao possui notificacoes por usuario individual.
+- A v1 nao usa WebSocket, e-mail, WhatsApp ou push.
+
+### Historico de atividades
+
+Atividades registram eventos operacionais relevantes.
+
+Campos principais:
+
+- Empresa.
+- Tipo de ator: `INTERNAL_USER`, `CUSTOMER` ou `SYSTEM`.
+- Usuario interno, quando aplicavel.
+- Cliente, quando aplicavel.
+- Acao.
+- Tipo e ID da entidade.
+- Descricao amigavel.
+- Metadata textual opcional.
+- Data de criacao.
+
+Regras:
+
+- Usuario autenticado ve apenas atividades da propria empresa.
+- Eventos publicos por token registram atividades na empresa do cliente/proposta do token.
+- Atividades nao substituem auditoria avancada com diff campo a campo.
+
+### Eventos que geram notificacao e atividade
+
+- Cliente aprova proposta publica ou pelo portal: `QUOTE_APPROVED`.
+- Cliente recusa proposta publica ou pelo portal: `QUOTE_REJECTED`.
+- Cliente cria solicitacao de orcamento: `QUOTE_REQUEST_CREATED`.
+- Cliente cancela solicitacao de orcamento: `QUOTE_REQUEST_CANCELLED`.
+- Empresa converte solicitacao em orcamento: `QUOTE_REQUEST_CONVERTED`.
+- Empresa conclui orcamento: `QUOTE_COMPLETED`.
+- Produto cruza para estoque baixo: `STOCK_LOW`.
+- Produto cruza para estoque zero: `STOCK_OUT`.
+- Empresa registra reposicao: `RESTOCK_REGISTERED`.
+
+Eventos de estoque baixo e sem estoque devem evitar spam: a notificacao so e criada quando a movimentacao cruza o limite. Se o produto ja estava baixo ou zerado, novas movimentacoes nesse mesmo estado nao criam notificacoes repetidas.
+
+### Frontend
+
+- Sino de notificacoes no layout interno autenticado.
+- Contador de nao lidas.
+- Dropdown com notificacoes recentes nao lidas.
+- Link para `/notifications`.
+- Pagina `/notifications` com filtros de status/tipo, paginacao e acoes de leitura.
+- Pagina `/activity-logs` com historico paginado e filtro simples por entidade.
+
+Toda UI da central deve seguir o modo dark fixo do frontend.
 
 ## PDF de proposta/orcamento
 
@@ -463,6 +666,8 @@ Usar:
 - Helper `appToast`.
 - Modal reutilizavel `ConfirmDialog`.
 - Loading, empty e error states em varios modulos.
+- Interface fixa em modo dark, sem opcao de alternancia para modo claro ou tema do sistema.
+- Novas features devem nascer em dark mode e usar tokens de tema para fundos, textos e bordas, evitando `bg-white`, `bg-slate-50` e textos escuros como base visual de paginas.
 
 ## Paginacao, busca e filtros
 

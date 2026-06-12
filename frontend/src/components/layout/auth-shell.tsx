@@ -14,7 +14,7 @@ export function AuthShell({
     <main className="min-h-screen bg-page">
       <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-6 py-10 lg:grid-cols-[0.95fr_1.05fr]">
         <section>
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-teal-50 text-primary">
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-slate-900 text-primary">
             <Boxes size={25} aria-hidden="true" />
           </div>
           <p className="text-sm font-medium text-primary">StockFlow</p>

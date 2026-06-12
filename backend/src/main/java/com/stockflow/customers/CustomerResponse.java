@@ -15,6 +15,8 @@ public record CustomerResponse(
         String city,
         String state,
         String notes,
+        String portalToken,
+        boolean portalEnabled,
         boolean active,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
@@ -32,6 +34,8 @@ public record CustomerResponse(
                 customer.city,
                 customer.state,
                 customer.notes,
+                customer.portalToken,
+                customer.portalEnabled,
                 customer.active,
                 customer.createdAt,
                 customer.updatedAt

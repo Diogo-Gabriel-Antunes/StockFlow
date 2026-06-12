@@ -64,7 +64,7 @@ export function Modal({
         className={`relative w-full ${widthClass} overflow-hidden rounded-xl border border-border bg-panel shadow-2xl shadow-slate-950/20`}
         role="dialog"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border bg-slate-50/70 px-6 py-5 dark:bg-white/[0.03]">
+        <header className="flex items-start justify-between gap-4 border-b border-border bg-slate-900/70 px-6 py-5 dark:bg-slate-800/[0.03]">
           <div>
             <h2 className="text-lg font-semibold text-ink" id={titleId}>{title}</h2>
             {description ? (
@@ -73,7 +73,7 @@ export function Modal({
           </div>
           <button
             aria-label="Fechar"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-panel text-ink transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-panel text-ink transition hover:bg-slate-900 dark:hover:bg-slate-800"
             onClick={onClose}
             type="button"
           >

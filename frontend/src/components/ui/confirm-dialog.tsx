@@ -20,9 +20,9 @@ type ConfirmDialogProps = {
 };
 
 const iconClasses: Record<ConfirmDialogVariant, string> = {
-  danger: "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300",
-  warning: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300",
-  default: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300",
+  danger: "border-red-900/60 bg-red-950/40 text-red-300 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300",
+  warning: "border-amber-900/60 bg-amber-950/40 text-amber-300 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300",
+  default: "border-sky-900/60 bg-sky-950/40 text-sky-300 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300",
 };
 
 export function ConfirmDialog({

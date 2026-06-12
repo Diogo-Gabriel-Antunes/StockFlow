@@ -2,6 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { appToast, getApiErrorMessage } from "@/lib/toast";
 import {
   approvePublicQuote,
   getPublicQuote,
@@ -16,135 +20,190 @@ type PublicQuotePageProps = {
 
 export function PublicQuotePage({ token }: PublicQuotePageProps) {
   const queryClient = useQueryClient();
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
   const quote = useQuery({
     queryKey: ["public-quote", token],
     queryFn: () => getPublicQuote(token),
     enabled: Boolean(token),
+    retry: false,
   });
 
   const approve = useMutation({
     mutationFn: () => approvePublicQuote(token),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["public-quote", token] }),
+    onSuccess: () => {
+      setApproveOpen(false);
+      appToast.success("Proposta aprovada com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["public-quote", token] });
+    },
+    onError: (error) => appToast.error(getApiErrorMessage(error, "Não foi possível aprovar a proposta.")),
   });
+
   const reject = useMutation({
-    mutationFn: () => rejectPublicQuote(token),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["public-quote", token] }),
+    mutationFn: () => rejectPublicQuote(token, rejectReason),
+    onSuccess: () => {
+      setRejectOpen(false);
+      setRejectReason("");
+      appToast.success("Proposta recusada com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["public-quote", token] });
+    },
+    onError: (error) => appToast.error(getApiErrorMessage(error, "Não foi possível recusar a proposta.")),
   });
-  const finalOrAnswered = quote.data
-    ? ["CUSTOMER_APPROVED", "COMPLETED", "REJECTED", "CANCELLED", "EXPIRED"].includes(quote.data.status)
-    : false;
+
+  if (quote.isLoading) {
+    return <main className="min-h-screen bg-page p-8 text-sm text-muted">Carregando proposta...</main>;
+  }
+
+  if (quote.isError || !quote.data) {
+    return (
+      <main className="min-h-screen bg-page px-4 py-8">
+        <section className="mx-auto max-w-3xl rounded-lg border border-red-900/60 bg-red-950/40 p-6 text-red-300 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+          <h1 className="text-lg font-semibold">Link inválido ou expirado.</h1>
+          <p className="mt-2 text-sm">Verifique o link recebido e tente novamente.</p>
+        </section>
+      </main>
+    );
+  }
+
+  const canDecide = quote.data.status === "SENT";
 
   return (
-    <main className="min-h-screen bg-[#080b10] px-4 py-8 text-slate-100">
-      <div className="mx-auto grid max-w-4xl gap-6">
-        {quote.isLoading ? <p className="text-sm text-slate-400">Carregando proposta...</p> : null}
-        {quote.isError ? (
-          <section className="rounded-lg border border-red-500/30 bg-red-950/50 p-5 text-sm font-medium text-red-100 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
-            Link inválido ou expirado.
-          </section>
-        ) : null}
+    <main className="min-h-screen bg-page px-4 py-8 text-ink">
+      <div className="mx-auto grid max-w-5xl gap-6">
+        <header className="rounded-lg border border-border bg-panel p-6 shadow-subtle">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-primary">{quote.data.companyName}</p>
+              <h1 className="mt-1 text-3xl font-semibold text-ink">Proposta {quote.data.code}</h1>
+              <p className="mt-2 text-sm text-muted">
+                Cliente: {quote.data.customerName} · {statusLabel(quote.data.status)}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {quote.data.validUntil ? `Validade: ${quote.data.validUntil}` : "Sem validade definida"}
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                {[quote.data.companyDocument, quote.data.companyEmail, quote.data.companyPhone, quote.data.companyWhatsapp, companyLocation(quote.data.companyCity, quote.data.companyState)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+            <a
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink transition hover:bg-slate-900 dark:hover:bg-slate-800"
+              href={publicQuotePdfUrl(token)}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <Download size={16} aria-hidden="true" />
+              Baixar PDF
+            </a>
+          </div>
+        </header>
 
-        {quote.data ? (
-          <>
-            <header className="rounded-lg border border-white/10 bg-[#101820] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
-              <p className="text-sm font-medium text-cyan-300">{quote.data.companyName}</p>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-                {quote.data.companyDocument ? <span>{quote.data.companyDocument}</span> : null}
-                {quote.data.companyEmail ? <span>{quote.data.companyEmail}</span> : null}
-                {quote.data.companyPhone ? <span>{quote.data.companyPhone}</span> : null}
-                {quote.data.companyWhatsapp ? <span>WhatsApp {quote.data.companyWhatsapp}</span> : null}
-                {companyLocation(quote.data.companyCity, quote.data.companyState) ? (
-                  <span>{companyLocation(quote.data.companyCity, quote.data.companyState)}</span>
-                ) : null}
-              </div>
-              <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl font-semibold text-white">Proposta {quote.data.code}</h1>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Cliente: {quote.data.customerName} · {statusLabel(quote.data.status)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Validade: {quote.data.validUntil ?? "-"}
-                  </p>
-                </div>
-                <a
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-cyan-300/30 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 shadow-[0_10px_28px_rgba(8,145,178,0.18)] transition hover:border-cyan-200/60 hover:bg-cyan-300/15"
-                  href={publicQuotePdfUrl(token)}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <Download size={16} aria-hidden="true" />
-                  Baixar PDF
-                </a>
-              </div>
-            </header>
+        <section className="overflow-hidden rounded-lg border border-border bg-panel shadow-subtle">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+              <thead className="bg-slate-900 text-xs uppercase text-muted dark:bg-slate-900/70">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Item</th>
+                  <th className="px-5 py-3 font-semibold">Qtd.</th>
+                  <th className="px-5 py-3 font-semibold">Unitário</th>
+                  <th className="px-5 py-3 font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quote.data.items.map((item) => (
+                  <tr className="border-t border-border" key={item.id}>
+                    <td className="px-5 py-4 font-semibold text-ink">{item.description}</td>
+                    <td className="px-5 py-4 text-muted">{item.quantity}</td>
+                    <td className="px-5 py-4 text-muted">{currency(item.unitPrice)}</td>
+                    <td className="px-5 py-4 font-semibold text-ink">{currency(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-            <section className="overflow-hidden rounded-lg border border-white/10 bg-[#101820] shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left text-sm">
-                  <thead className="bg-white/[0.04] text-xs uppercase text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Item</th>
-                      <th className="px-4 py-3 font-semibold">Qtd.</th>
-                      <th className="px-4 py-3 font-semibold">Unitário</th>
-                      <th className="px-4 py-3 font-semibold">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quote.data.items.map((item) => (
-                      <tr className="border-t border-white/10" key={item.id}>
-                        <td className="px-4 py-3 font-semibold text-white">{item.description}</td>
-                        <td className="px-4 py-3 text-slate-300">{item.quantity}</td>
-                        <td className="px-4 py-3 text-slate-300">{currency(item.unitPrice)}</td>
-                        <td className="px-4 py-3 text-slate-200">{currency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+        <section className="grid gap-5 rounded-lg border border-border bg-panel p-6 shadow-subtle md:grid-cols-[1fr_20rem]">
+          <div className="text-sm leading-6 text-muted">
+            {quote.data.paymentTerms ? <p><strong>Pagamento:</strong> {quote.data.paymentTerms}</p> : null}
+            {quote.data.notes ? <p className="mt-2"><strong>Observações:</strong> {quote.data.notes}</p> : null}
+            <StatusMessage status={quote.data.status} />
+          </div>
+          <div className="grid gap-2 text-sm text-muted">
+            <Line label="Subtotal" value={currency(quote.data.subtotal)} />
+            <Line label="Desconto" value={currency(quote.data.discount)} />
+            <Line label="Frete" value={currency(quote.data.shipping)} />
+            <div className="mt-2 flex justify-between border-t border-border pt-3 text-base text-ink">
+              <span>Total</span>
+              <strong>{currency(quote.data.total)}</strong>
+            </div>
+          </div>
+        </section>
 
-            <section className="grid gap-4 rounded-lg border border-white/10 bg-[#101820] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.28)] md:grid-cols-[1fr_20rem]">
-              <div className="text-sm text-slate-300">
-                {quote.data.paymentTerms ? <p>Pagamento: {quote.data.paymentTerms}</p> : null}
-                {quote.data.notes ? <p className="mt-1">Observações: {quote.data.notes}</p> : null}
-              </div>
-              <div className="grid gap-2 text-sm text-slate-300">
-                <div className="flex justify-between"><span>Subtotal</span><strong className="text-slate-100">{currency(quote.data.subtotal)}</strong></div>
-                <div className="flex justify-between"><span>Desconto</span><strong className="text-slate-100">{currency(quote.data.discount)}</strong></div>
-                <div className="flex justify-between"><span>Frete</span><strong className="text-slate-100">{currency(quote.data.shipping)}</strong></div>
-                <div className="mt-2 flex justify-between border-t border-white/10 pt-3 text-base text-white"><span>Total</span><strong>{currency(quote.data.total)}</strong></div>
-              </div>
-            </section>
-
-            {approve.isError || reject.isError ? (
-              <div className="rounded-md border border-red-500/30 bg-red-950/50 px-3 py-2 text-sm font-medium text-red-100">
-                Não foi possível atualizar a proposta. Verifique a validade do link.
-              </div>
-            ) : null}
-
-            <footer className="flex flex-wrap justify-end gap-3">
-              <button
-                className="h-10 rounded-md border border-red-400/30 bg-red-500/10 px-4 text-sm font-semibold text-red-100 shadow-[0_10px_28px_rgba(185,28,28,0.16)] transition hover:border-red-300/60 hover:bg-red-500/15 disabled:opacity-60"
-                disabled={reject.isPending || finalOrAnswered}
-                onClick={() => reject.mutate()}
-                type="button"
-              >
-                Recusar proposta
-              </button>
-              <button
-                className="h-10 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_rgba(103,232,249,0.22)] transition hover:bg-cyan-200 disabled:opacity-60"
-                disabled={approve.isPending || finalOrAnswered}
-                onClick={() => approve.mutate()}
-                type="button"
-              >
-                Aprovar proposta
-              </button>
-            </footer>
-          </>
+        {canDecide ? (
+          <footer className="flex flex-wrap justify-end gap-2">
+            <Button onClick={() => setRejectOpen(true)} variant="danger">Recusar proposta</Button>
+            <Button onClick={() => setApproveOpen(true)}>Aprovar proposta</Button>
+          </footer>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        confirmLabel="Aprovar proposta"
+        description="Após a aprovação, a empresa dará continuidade ao atendimento."
+        loading={approve.isPending}
+        loadingLabel="Aprovando..."
+        onCancel={() => setApproveOpen(false)}
+        onConfirm={() => approve.mutate()}
+        open={approveOpen}
+        title="Deseja aprovar esta proposta?"
+      />
+
+      {rejectOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm">
+          <section className="w-full max-w-md rounded-lg border border-border bg-panel p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-ink">Recusar proposta</h2>
+            <textarea
+              className="mt-4 min-h-28 w-full rounded-md border border-border bg-panel px-3 py-2 text-sm text-ink outline-none placeholder:text-slate-400 focus:border-primary dark:bg-slate-950/40 dark:placeholder:text-muted"
+              onChange={(event) => setRejectReason(event.target.value)}
+              placeholder="Motivo da recusa, opcional"
+              value={rejectReason}
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <Button disabled={reject.isPending} onClick={() => setRejectOpen(false)} variant="secondary">Cancelar</Button>
+              <Button disabled={reject.isPending} onClick={() => reject.mutate()} variant="danger">
+                {reject.isPending ? "Recusando..." : "Confirmar recusa"}
+              </Button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
+  );
+}
+
+function StatusMessage({ status }: { status: string }) {
+  const message = {
+    CUSTOMER_APPROVED: "Proposta aprovada. Aguardando conclusão pela empresa.",
+    COMPLETED: "Proposta concluída.",
+    REJECTED: "Proposta recusada.",
+    CANCELLED: "Proposta cancelada.",
+    EXPIRED: "Proposta expirada.",
+  }[status];
+  return message ? (
+    <p className="mt-3 rounded-md bg-slate-800 px-3 py-2 font-medium text-slate-300 dark:bg-slate-900 dark:text-slate-200">{message}</p>
+  ) : null;
+}
+
+function Line({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span>{label}</span>
+      <strong className="text-ink">{value}</strong>
+    </div>
   );
 }
 

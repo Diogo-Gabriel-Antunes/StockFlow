@@ -42,6 +42,15 @@ public class CustomerEntity extends PanacheEntityBase {
     public String state;
     public String notes;
 
+    @Column(name = "portal_token", unique = true)
+    public String portalToken;
+
+    @Column(name = "portal_enabled", nullable = false)
+    public boolean portalEnabled = true;
+
+    @Column(name = "portal_token_created_at")
+    public OffsetDateTime portalTokenCreatedAt;
+
     @Column(nullable = false)
     public boolean active = true;
 

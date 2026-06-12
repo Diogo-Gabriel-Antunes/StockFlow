@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -119,6 +119,20 @@ export function CustomersPage() {
     }
   }
 
+  async function copyPortalLink(customer: Customer) {
+    if (!customer.portalToken || typeof window === "undefined") {
+      appToast.error("Link do portal indisponível.");
+      return;
+    }
+    const url = `${window.location.origin}/customer-portal/${customer.portalToken}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      appToast.success("Link do portal copiado.");
+    } catch {
+      appToast.error("Não foi possível copiar o link do portal.");
+    }
+  }
+
   return (
     <AppLayout maxWidth="wide">
         <PageHeader
@@ -198,6 +212,14 @@ export function CustomersPage() {
                       </TableCell>
                       <TableCell align="right">
                         <div className="flex justify-end gap-2">
+                          <ActionButton
+                            aria-label={`Copiar link do portal de ${customer.name}`}
+                            disabled={!customer.portalToken}
+                            onClick={() => copyPortalLink(customer)}
+                            type="button"
+                          >
+                            <Copy size={16} aria-hidden="true" />
+                          </ActionButton>
                           <ActionButton
                             aria-label={`Editar ${customer.name}`}
                             onClick={() => openEditModal(customer)}

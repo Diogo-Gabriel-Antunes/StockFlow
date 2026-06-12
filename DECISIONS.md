@@ -227,3 +227,79 @@ Os dados comerciais configurados sao usados em:
 Novos orcamentos usam validade, observacoes e condicoes de pagamento padrao somente quando o payload nao informa valores especificos.
 
 Upload de logo, storage, templates customizaveis, dados fiscais avancados e multiplos perfis comerciais ficam para evolucoes futuras.
+
+## Decisao 016 — Portal do Cliente v1
+
+O Portal do Cliente v1 usa token publico seguro vinculado ao cliente.
+
+Nao ha login/senha de cliente nesta versao.
+
+O link publico do portal usa o frontend:
+
+```txt
+/customer-portal/{portalToken}
+```
+
+As rotas reais publicas do backend ficam sob:
+
+```txt
+/public/customer-portal/{token}
+```
+
+O cliente pode criar solicitacoes de orcamento, mas nao edita propostas oficiais enviadas pela empresa.
+
+Solicitacoes de orcamento sao modeladas separadamente de orcamentos oficiais em `QuoteRequest` e `QuoteRequestItem`.
+
+Converter uma solicitacao cria um orcamento oficial em `DRAFT`, com itens livres descritos nas observacoes para precificacao manual pela empresa.
+
+A aprovacao publica nao baixa estoque.
+
+A recusa publica nao baixa estoque.
+
+A baixa de estoque continua exclusiva da conclusao interna do orcamento.
+
+Login/senha do cliente, magic link por e-mail, notificacoes, upload de arquivos, chat e assinatura digital ficam para evolucoes futuras.
+
+## Decisao 017 — Interface apenas em modo dark
+
+O StockFlow utiliza interface fixa em modo dark.
+
+A aplicacao nao oferece alternancia entre modo claro, escuro ou sistema nesta versao.
+
+O frontend aplica a classe `dark` diretamente no elemento `html` e usa variaveis CSS escuras como padrao para evitar flash claro no carregamento.
+
+Nao ha persistencia de preferencia de tema em `localStorage`.
+
+Novas features devem ser implementadas em dark mode desde o inicio, usando tokens de tema do frontend em vez de bases claras fixas.
+
+## Decisao 018 — Central de Notificacoes v1 company-scoped
+
+A Central de Notificacoes v1 e escopada por empresa.
+
+As notificacoes nao sao por usuario individual nesta versao.
+
+Quando uma notificacao e marcada como lida, ela fica lida para toda a empresa.
+
+A v1 nao usa WebSocket, Server-Sent Events, e-mail, WhatsApp ou push notification.
+
+Eventos importantes de portal, proposta publica, solicitacoes, orcamentos, estoque e reposicao geram notificacao e historico de atividade.
+
+O historico de atividades registra ator `INTERNAL_USER`, `CUSTOMER` ou `SYSTEM`, mas nao implementa auditoria avancada com diff campo a campo.
+
+Eventos de estoque baixo e produto sem estoque devem evitar spam, criando notificacao apenas quando a movimentacao cruza o limite.
+
+## Decisao 019 — Catalogo do Cliente e imagem de produto v1
+
+A v1 de imagem de produto usa apenas `imageUrl` opcional.
+
+Nao ha upload de imagem, storage MinIO/S3, redimensionamento, galeria ou controle de imagem principal nesta fase.
+
+O cliente pode visualizar e selecionar produtos ativos no portal publico por token, mas nao altera produtos.
+
+Produtos inativos nao aparecem no catalogo publico nem no autocomplete publico.
+
+Solicitacoes de orcamento podem conter produtos cadastrados e itens manuais.
+
+Itens de solicitacao com produto cadastrado salvam `productId` e snapshot dos dados principais do produto para preservar o pedido original.
+
+O catalogo e o autocomplete publicos nao expoem preco de custo, estoque interno ou dados de movimentacao.

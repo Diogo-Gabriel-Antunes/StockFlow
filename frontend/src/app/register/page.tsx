@@ -105,7 +105,7 @@ export default function RegisterPage() {
           {...register("password")}
         />
         {formError ? (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+          <div className="rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm font-medium text-red-300">
             {formError}
           </div>
         ) : null}

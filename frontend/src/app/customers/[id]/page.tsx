@@ -42,7 +42,7 @@ export default function EditCustomerPage() {
             <p className="text-sm text-muted">Carregando cliente...</p>
           ) : null}
           {customer.isError ? (
-            <p className="text-sm font-medium text-red-700">
+            <p className="text-sm font-medium text-red-300">
               Não foi possível carregar o cliente.
             </p>
           ) : null}

@@ -12,6 +12,7 @@ import com.stockflow.users.UserRepository;
 import com.stockflow.publicquotes.PublicQuoteLinkResponse;
 import com.stockflow.publicquotes.PublicQuoteService;
 import com.stockflow.publicquotes.QuotePdfService;
+import com.stockflow.notifications.BusinessEventService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -58,6 +59,9 @@ public class QuoteService {
 
     @Inject
     QuotePdfService quotePdfService;
+
+    @Inject
+    BusinessEventService businessEventService;
 
     public QuotePageResponse list(QuoteStatus status, Integer page, Integer size) {
         return list(null, status, null, null, null, null, null, page, size);
@@ -162,7 +166,10 @@ public class QuoteService {
     @Transactional
     public QuoteResponse complete(UUID id) {
         QuoteEntity quote = findQuote(id);
-        return QuoteResponse.from(quoteApprovalService.complete(quote, findCurrentUser()));
+        UserEntity user = findCurrentUser();
+        QuoteEntity completed = quoteApprovalService.complete(quote, user);
+        businessEventService.quoteCompleted(completed, user);
+        return QuoteResponse.from(completed);
     }
 
     @Transactional

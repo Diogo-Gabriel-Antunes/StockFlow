@@ -2,6 +2,7 @@ package com.stockflow.stock;
 
 import com.stockflow.products.ProductEntity;
 import com.stockflow.products.ProductRepository;
+import com.stockflow.notifications.BusinessEventService;
 import com.stockflow.shared.security.AuthenticatedTenant;
 import com.stockflow.users.UserEntity;
 import com.stockflow.users.UserRepository;
@@ -32,6 +33,9 @@ public class StockService {
 
     @Inject
     AuthenticatedTenant authenticatedTenant;
+
+    @Inject
+    BusinessEventService businessEventService;
 
     public StockMovementPageResponse listMovements(UUID productId, Integer page, Integer size) {
         return listMovements(null, productId, null, null, null, null, null, page, size);
@@ -148,6 +152,8 @@ public class StockService {
         movement.referenceId = referenceId;
         movement.createdBy = user;
         stockMovementRepository.persist(movement);
+        businessEventService.stockLow(product, previousQuantity, newQuantity);
+        businessEventService.stockOut(product, previousQuantity, newQuantity);
         return movement;
     }
 

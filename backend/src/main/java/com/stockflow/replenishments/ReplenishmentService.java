@@ -1,16 +1,20 @@
 package com.stockflow.replenishments;
 
 import com.stockflow.products.ProductRepository;
+import com.stockflow.products.ProductEntity;
+import com.stockflow.notifications.BusinessEventService;
 import com.stockflow.shared.security.AuthenticatedTenant;
 import com.stockflow.stock.LowStockStatus;
 import com.stockflow.stock.StockMovementResponse;
 import com.stockflow.stock.StockService;
+import com.stockflow.users.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import io.quarkus.panache.common.Sort;
 import java.util.List;
 import java.util.UUID;
+import jakarta.ws.rs.NotFoundException;
 
 @ApplicationScoped
 public class ReplenishmentService {
@@ -28,6 +32,12 @@ public class ReplenishmentService {
 
     @Inject
     StockService stockService;
+
+    @Inject
+    UserRepository userRepository;
+
+    @Inject
+    BusinessEventService businessEventService;
 
     public List<ReplenishmentProductResponse> listCriticalProducts() {
         UUID companyId = authenticatedTenant.companyId();
@@ -83,6 +93,8 @@ public class ReplenishmentService {
 
     @Transactional
     public ReplenishmentEntryResponse restock(UUID productId, RestockRequest request) {
+        ProductEntity product = productRepository.findActiveByCompanyAndId(authenticatedTenant.companyId(), productId)
+                .orElseThrow(NotFoundException::new);
         UUID replenishmentId = UUID.randomUUID();
         StockMovementResponse movement = stockService.entryWithReference(
                 productId,
@@ -91,6 +103,8 @@ public class ReplenishmentService {
                 "REPLENISHMENT",
                 replenishmentId
         );
+        businessEventService.restockRegistered(product, request.quantity(), userRepository.findByIdOptional(authenticatedTenant.userId())
+                .orElseThrow(NotFoundException::new));
         return new ReplenishmentEntryResponse(replenishmentId, movement);
     }
 

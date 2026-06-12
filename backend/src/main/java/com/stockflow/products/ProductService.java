@@ -64,7 +64,7 @@ public class ProductService {
         ProductEntity product = new ProductEntity();
         product.company = company;
         applyRequest(product, request);
-        product.active = true;
+        product.active = request.active() == null ? true : request.active();
         productRepository.persist(product);
         return ProductResponse.from(product);
     }
@@ -83,7 +83,7 @@ public class ProductService {
     }
 
     private ProductEntity findCurrentCompanyProduct(UUID id) {
-        return productRepository.findActiveByCompanyAndId(authenticatedTenant.companyId(), id)
+        return productRepository.findByCompanyAndId(authenticatedTenant.companyId(), id)
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -91,13 +91,18 @@ public class ProductService {
         product.name = request.name().trim();
         product.sku = trimToNull(request.sku());
         product.category = trimToNull(request.category());
+        product.description = trimToNull(request.description());
         product.barcode = trimToNull(request.barcode());
         product.referenceCode = trimToNull(request.referenceCode());
+        product.imageUrl = trimToNull(request.imageUrl());
         product.costPrice = request.costPrice();
         product.salePrice = request.salePrice();
         product.unit = request.unit().trim();
         product.stockQuantity = request.stockQuantity();
         product.minimumStock = request.minimumStock();
+        if (request.active() != null) {
+            product.active = request.active();
+        }
     }
 
     private String trimToNull(String value) {

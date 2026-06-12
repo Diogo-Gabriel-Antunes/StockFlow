@@ -310,6 +310,95 @@ Status: FEITO
 - Personalizacao visual da proposta publica.
 - Dados fiscais avancados.
 
+## Fase 9.2 — Portal do Cliente e Proposta Publica v2
+
+Status: FEITO
+
+### Ja implementado
+
+- Token publico seguro vinculado ao cliente.
+- Link do portal copiavel pela listagem de clientes.
+- Portal publico `/customer-portal/{token}`.
+- Catalogo publico de produtos ativos em `/customer-portal/{token}/products`.
+- Autocomplete publico de produtos ativos na criacao/edicao de solicitacao.
+- Endpoints publicos `/public/customer-portal/{token}`.
+- Listagem de propostas em aberto e historico do cliente.
+- Detalhe de proposta pelo portal.
+- Aprovar proposta enviada pelo portal.
+- Recusar proposta enviada pelo portal com motivo opcional.
+- Download de PDF pelo portal.
+- Proposta Publica v2 na rota publica existente.
+- Confirmacao profissional para aprovacao.
+- Modal de recusa com motivo opcional.
+- Entidades `QuoteRequest` e `QuoteRequestItem`.
+- Criacao de solicitacao de orcamento pelo cliente.
+- Solicitacao de orcamento com produto cadastrado selecionado ou item manual.
+- Snapshot de produto na solicitacao com nome, SKU, referencia e imagem.
+- Edicao/cancelamento de solicitacao enquanto `REQUESTED`.
+- Tela interna `/quote-requests`.
+- Filtros por status e busca em solicitacoes.
+- Marcar solicitacao como `IN_REVIEW`.
+- Cancelar solicitacao internamente.
+- Converter solicitacao em orcamento oficial `DRAFT`.
+- Conversao sem alterar estoque.
+- Conversao preserva os itens solicitados nas observacoes do orcamento rascunho para revisao interna.
+- Testes backend e frontend.
+
+### Pendencias futuras
+
+- Login/senha do cliente.
+- Magic link por e-mail.
+- Notificacoes por e-mail.
+- Notificacoes por WhatsApp.
+- Upload real de imagem de produto.
+- Storage MinIO/S3 para imagens.
+- Galeria de imagens por produto.
+- Categorias publicas de catalogo.
+- Carrinho, pedido direto, checkout e pagamento online.
+- Upload de arquivos na solicitacao.
+- Chat com cliente.
+- Assinatura digital.
+- Conversao assistida com selecao de produtos/servicos e precificacao automatica.
+
+## Fase 9.3 — Central de Notificacoes e Historico de Atividades
+
+Status: FEITO
+
+### Ja implementado
+
+- Migration `V13__notifications_activity_logs.sql`.
+- Entidade/tabela `notifications`.
+- Entidade/tabela `activity_logs`.
+- Services `NotificationService`, `ActivityLogService` e `BusinessEventService`.
+- Endpoints autenticados:
+  - `GET /notifications`
+  - `GET /notifications/unread-count`
+  - `POST /notifications/{id}/read`
+  - `POST /notifications/read-all`
+  - `GET /activity-logs`
+- Notificacoes company-scoped, lidas para toda a empresa.
+- Historico de atividades com atores `INTERNAL_USER`, `CUSTOMER` e `SYSTEM`.
+- Eventos automaticos para aprovacao/recusa publica de proposta.
+- Eventos automaticos para criacao, cancelamento e conversao de solicitacao.
+- Evento automatico para conclusao de orcamento.
+- Eventos automaticos para estoque baixo, produto sem estoque e reposicao registrada.
+- Protecao anti-spam para estoque baixo/sem estoque baseada em cruzamento de limite.
+- Sino de notificacoes no layout autenticado.
+- Contador de nao lidas e dropdown de notificacoes recentes.
+- Tela `/notifications` com filtros, paginacao, marcar como lida e marcar todas como lidas.
+- Tela `/activity-logs` com historico paginado e filtro simples por entidade.
+- Testes backend e frontend proporcionais.
+
+### Pendencias futuras
+
+- WebSocket ou Server-Sent Events.
+- Notificacoes por e-mail.
+- Notificacoes por WhatsApp.
+- Preferencias por usuario.
+- Leitura individual por usuario.
+- Timeline no detalhe de cliente/orcamento.
+- Auditoria avancada com diff campo a campo.
+
 ## Fase 10 — Deploy em VPS
 
 Status: PARCIAL
@@ -363,6 +452,7 @@ Status geral: PARCIAL
 - Toast profissional com `sonner`.
 - Helper centralizado `appToast`.
 - Modal reutilizavel `ConfirmDialog`.
+- Interface fixa em modo dark, sem alternancia de tema.
 - Busca por `alert`/`confirm` nativo removida de `frontend/src`.
 - Loading, empty e error states em tabelas e telas principais.
 - Testes frontend para componentes e paginas principais.

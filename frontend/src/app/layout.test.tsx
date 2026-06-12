@@ -3,8 +3,8 @@ import { describe, expect, test, vi } from "vitest";
 import RootLayout from "./layout";
 
 vi.mock("sonner", () => ({
-  Toaster: (props: { position: string; richColors: boolean }) => (
-    <div data-position={props.position} data-rich-colors={String(props.richColors)}>
+  Toaster: (props: { position: string; richColors: boolean; theme: string }) => (
+    <div data-position={props.position} data-rich-colors={String(props.richColors)} data-theme={props.theme}>
       toaster
     </div>
   ),
@@ -23,5 +23,12 @@ describe("RootLayout", () => {
 
     expect(toaster.props.position).toBe("top-right");
     expect(toaster.props.richColors).toBe(true);
+    expect(toaster.props.theme).toBe("dark");
+  });
+
+  test("forces dark mode on the html element", () => {
+    const layout = RootLayout({ children: <main>conteúdo</main> }) as React.ReactElement;
+
+    expect(layout.props.className).toBe("dark");
   });
 });

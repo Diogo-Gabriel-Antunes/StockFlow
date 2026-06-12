@@ -71,8 +71,8 @@ describe("PublicQuotePage", () => {
     renderWithQueryClient();
 
     expect(await screen.findByText("Proposta Q-001")).toBeInTheDocument();
-    expect(screen.getByText("12.345.678/0001-90")).toBeInTheDocument();
-    expect(screen.getByText("Joinville/SC")).toBeInTheDocument();
+    expect(screen.getByText(/12\.345\.678\/0001-90/)).toBeInTheDocument();
+    expect(screen.getByText(/Joinville\/SC/)).toBeInTheDocument();
     expect(screen.getByText("Produto Teste")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Baixar PDF" })).toHaveAttribute(
       "href",
@@ -80,9 +80,26 @@ describe("PublicQuotePage", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Aprovar proposta" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Aprovar proposta" }).at(-1)!);
 
     await waitFor(() => {
       expect(approvePublicQuote).toHaveBeenCalledWith("public-token");
+    });
+  });
+
+  test("rejects with optional reason", async () => {
+    renderWithQueryClient();
+
+    expect(await screen.findByText("Proposta Q-001")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Recusar proposta" }));
+    fireEvent.change(screen.getByPlaceholderText("Motivo da recusa, opcional"), {
+      target: { value: "Valor acima do orçamento" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar recusa" }));
+
+    await waitFor(() => {
+      expect(rejectPublicQuote).toHaveBeenCalledWith("public-token", "Valor acima do orçamento");
     });
   });
 

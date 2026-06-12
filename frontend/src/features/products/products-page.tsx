@@ -30,6 +30,7 @@ import { appToast, getApiErrorMessage } from "@/lib/toast";
 import { deleteProduct, listProducts } from "./product-service";
 import { ProductForm } from "./product-form";
 import type { Product } from "./types";
+import { ProductImage } from "@/features/customer-portal/customer-portal-products-page";
 
 type ModalMode = "create" | "edit";
 type ActiveFilter = "all" | "active" | "inactive";
@@ -162,7 +163,7 @@ export function ProductsPage() {
         }}
       >
         <select
-          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
+          className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-44"
           onChange={(event) => changeActiveFilter(event.target.value as ActiveFilter)}
           value={activeFilter}
         >
@@ -170,7 +171,7 @@ export function ProductsPage() {
           <option value="inactive">Inativos</option>
           <option value="all">Todos</option>
         </select>
-        <label className="flex h-11 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-medium text-ink dark:bg-slate-950/40">
+        <label className="flex h-11 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-medium text-ink dark:bg-slate-950/40">
           <input
             checked={lowStock}
             className="h-4 w-4 accent-primary"
@@ -214,8 +215,20 @@ export function ProductsPage() {
                 {products.data.items.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell primary>
-                      <p className="font-semibold text-ink">{product.name}</p>
-                      <p className="text-xs text-muted">{productDetails(product)}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border">
+                          <ProductImage imageUrl={product.imageUrl} name={product.name} />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-ink">{product.name}</p>
+                            <Badge tone={product.active ? "success" : "neutral"}>
+                              {product.active ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted">{productDetails(product)}</p>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>{formatMoney(product.salePrice)}</TableCell>
                     <TableCell>

@@ -43,6 +43,16 @@ public class ProductRepository implements PanacheRepositoryBase<ProductEntity, U
         return find("company.id = ?1 and id = ?2 and active = true", companyId, id).firstResultOptional();
     }
 
+    public Optional<ProductEntity> findByCompanyAndId(UUID companyId, UUID id) {
+        return find("company.id = ?1 and id = ?2", companyId, id).firstResultOptional();
+    }
+
+    public List<ProductEntity> searchActiveByCompany(UUID companyId, String search, int limit) {
+        return find(query(search, true, null), Sort.by("name").ascending(), parameters(companyId, search, true))
+                .page(Page.of(0, limit))
+                .list();
+    }
+
     public long countLowStockByCompany(UUID companyId) {
         return count("company.id = ?1 and active = true and stockQuantity <= minimumStock", companyId);
     }
@@ -99,6 +109,7 @@ public class ProductRepository implements PanacheRepositoryBase<ProductEntity, U
                     lower(name) like :search
                     or lower(coalesce(sku, '')) like :search
                     or lower(coalesce(category, '')) like :search
+                    or lower(coalesce(description, '')) like :search
                     or lower(coalesce(barcode, '')) like :search
                     or lower(coalesce(referenceCode, '')) like :search
                 )
@@ -147,6 +158,7 @@ public class ProductRepository implements PanacheRepositoryBase<ProductEntity, U
                     lower(name) like :search
                     or lower(coalesce(sku, '')) like :search
                     or lower(coalesce(category, '')) like :search
+                    or lower(coalesce(description, '')) like :search
                     or lower(coalesce(barcode, '')) like :search
                     or lower(coalesce(referenceCode, '')) like :search
                 )

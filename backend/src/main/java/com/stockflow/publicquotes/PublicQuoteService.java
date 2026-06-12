@@ -3,6 +3,7 @@ package com.stockflow.publicquotes;
 import com.stockflow.quotes.QuoteApprovalService;
 import com.stockflow.quotes.QuoteEntity;
 import com.stockflow.quotes.QuoteStatus;
+import com.stockflow.notifications.BusinessEventService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,9 @@ public class PublicQuoteService {
 
     @Inject
     QuotePdfService quotePdfService;
+
+    @Inject
+    BusinessEventService businessEventService;
 
     @ConfigProperty(name = "stockflow.public-quote-base-url")
     String publicQuoteBaseUrl;
@@ -65,27 +69,47 @@ public class PublicQuoteService {
     public PublicQuoteResponse approve(String token) {
         PublicQuoteTokenEntity publicToken = findToken(token);
         ensureNotExpired(publicToken);
+        QuoteStatus previousStatus = publicToken.quote.status;
         quoteApprovalService.markCustomerApproved(publicToken.quote);
+        if (previousStatus == QuoteStatus.SENT) {
+            businessEventService.quoteApprovedByCustomer(publicToken.quote);
+        }
         return PublicQuoteResponse.from(publicToken);
     }
 
     @Transactional
     public PublicQuoteResponse reject(String token) {
+        return reject(token, null);
+    }
+
+    @Transactional
+    public PublicQuoteResponse reject(String token, RejectPublicQuoteRequest request) {
         PublicQuoteTokenEntity publicToken = findToken(token);
         ensureNotExpired(publicToken);
-        if (publicToken.quote.status == QuoteStatus.COMPLETED
-                || publicToken.quote.status == QuoteStatus.CANCELLED
-                || publicToken.quote.status == QuoteStatus.EXPIRED
-                || publicToken.quote.status == QuoteStatus.REJECTED) {
-            throw new BadRequestException("Quote cannot be rejected in current status");
-        }
-        publicToken.quote.status = QuoteStatus.REJECTED;
-        publicToken.quote.customerRejectedAt = OffsetDateTime.now();
+        rejectQuote(publicToken.quote, request == null ? null : request.reason());
         return PublicQuoteResponse.from(publicToken);
     }
 
     public QuotePdfResponse pdf(String token) {
         return quotePdfService.generate(findToken(token).quote);
+    }
+
+    public QuoteEntity rejectQuote(QuoteEntity quote, String reason) {
+        if (quote.status == QuoteStatus.COMPLETED
+                || quote.status == QuoteStatus.CANCELLED
+                || quote.status == QuoteStatus.EXPIRED
+                || quote.status == QuoteStatus.REJECTED) {
+            throw new BadRequestException("Quote cannot be rejected in current status");
+        }
+        if (quote.status != QuoteStatus.SENT) {
+            throw new BadRequestException("Only sent quotes can be rejected by the customer");
+        }
+        quote.status = QuoteStatus.REJECTED;
+        quote.customerRejectedAt = OffsetDateTime.now();
+        quote.customerDecisionAt = quote.customerRejectedAt;
+        quote.rejectionReason = trimToNull(reason);
+        businessEventService.quoteRejectedByCustomer(quote);
+        return quote;
     }
 
     private PublicQuoteTokenEntity findToken(String token) {
@@ -109,5 +133,12 @@ public class PublicQuoteService {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

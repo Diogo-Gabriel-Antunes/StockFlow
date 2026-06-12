@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { TextField } from "@/components/ui/text-field";
 import { getToken } from "@/features/auth/auth-storage";
 import { appToast, getApiErrorMessage } from "@/lib/toast";
@@ -21,13 +21,16 @@ const emptyValues: ProductFormInput = {
   name: "",
   sku: "",
   category: "",
+  description: "",
   barcode: "",
   referenceCode: "",
+  imageUrl: "",
   costPrice: "0",
   salePrice: "0",
   unit: "UN",
   stockQuantity: "0",
   minimumStock: "0",
+  active: true,
 };
 
 export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
@@ -38,22 +41,28 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    control,
   } = useForm<ProductFormInput>({
     defaultValues: product
       ? {
           name: product.name,
           sku: product.sku ?? "",
           category: product.category ?? "",
+          description: product.description ?? "",
           barcode: product.barcode ?? "",
           referenceCode: product.referenceCode ?? "",
+          imageUrl: product.imageUrl ?? "",
           costPrice: String(product.costPrice),
           salePrice: String(product.salePrice),
           unit: product.unit,
           stockQuantity: String(product.stockQuantity),
           minimumStock: String(product.minimumStock),
+          active: product.active,
         }
       : emptyValues,
   });
+  const imageUrl = useWatch({ control, name: "imageUrl" });
+  const [imageFailed, setImageFailed] = useState(false);
 
   async function onSubmit(input: ProductFormInput) {
     setFormError(null);
@@ -102,6 +111,42 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
         <TextField error={errors.unit?.message} label="Unidade" {...register("unit")} />
       </div>
 
+      <label className="grid gap-1.5">
+        <span className="text-sm font-medium text-ink">Descrição</span>
+        <textarea
+          className="min-h-24 rounded-md border border-border bg-slate-950/40 px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+          {...register("description")}
+        />
+        {errors.description?.message ? (
+          <span className="text-xs font-medium text-red-300">{errors.description.message}</span>
+        ) : null}
+      </label>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_12rem]">
+        <TextField
+          error={errors.imageUrl?.message}
+          label="URL da imagem"
+          placeholder="https://exemplo.com/imagem-produto.jpg"
+          {...register("imageUrl", { onChange: () => setImageFailed(false) })}
+        />
+        <div className="grid gap-1.5">
+          <span className="text-sm font-medium text-ink">Preview</span>
+          <div className="flex h-28 items-center justify-center overflow-hidden rounded-md border border-border bg-slate-950/40 text-xs text-muted">
+            {imageUrl && !imageFailed ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt="Preview do produto"
+                className="h-full w-full object-cover"
+                onError={() => setImageFailed(true)}
+                src={imageUrl}
+              />
+            ) : (
+              <span>Sem imagem</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <TextField
           error={errors.costPrice?.message}
@@ -133,8 +178,13 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
         />
       </div>
 
+      <label className="flex items-center gap-2 rounded-md border border-border bg-slate-950/30 px-3 py-2 text-sm font-medium text-ink">
+        <input className="h-4 w-4 accent-primary" type="checkbox" {...register("active")} />
+        Produto ativo
+      </label>
+
       {formError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+        <div className="rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm font-medium text-red-300 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
           {formError}
         </div>
       ) : null}
@@ -142,7 +192,7 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
       <div className="flex flex-wrap justify-end gap-3">
         {onCancel ? (
           <button
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-900 dark:hover:bg-slate-800"
             onClick={onCancel}
             type="button"
           >
@@ -150,7 +200,7 @@ export function ProductForm({ onCancel, onSaved, product }: ProductFormProps) {
           </button>
         ) : (
           <Link
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-900 dark:hover:bg-slate-800"
             href="/products"
           >
             Cancelar
@@ -173,12 +223,15 @@ function normalizeInput(input: ProductFormInput): ProductInput {
     name: input.name.trim(),
     sku: input.sku?.trim() || undefined,
     category: input.category?.trim() || undefined,
+    description: input.description?.trim() || undefined,
     barcode: input.barcode?.trim() || undefined,
     referenceCode: input.referenceCode?.trim() || undefined,
+    imageUrl: input.imageUrl?.trim() || undefined,
     costPrice: Number(input.costPrice),
     salePrice: Number(input.salePrice),
     unit: input.unit.trim(),
     stockQuantity: Number(input.stockQuantity),
     minimumStock: Number(input.minimumStock),
+    active: input.active ?? true,
   };
 }

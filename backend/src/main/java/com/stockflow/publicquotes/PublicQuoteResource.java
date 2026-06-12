@@ -1,6 +1,7 @@
 package com.stockflow.publicquotes;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -33,8 +34,8 @@ public class PublicQuoteResource {
 
     @POST
     @Path("/{token}/reject")
-    public PublicQuoteResponse reject(@PathParam("token") String token) {
-        return publicQuoteService.reject(token);
+    public PublicQuoteResponse reject(@PathParam("token") String token, @Valid RejectPublicQuoteRequest request) {
+        return publicQuoteService.reject(token, request);
     }
 
     @GET

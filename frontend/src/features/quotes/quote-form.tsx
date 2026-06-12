@@ -139,7 +139,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
         <label className="grid gap-1.5" htmlFor="customerId">
           <span className="text-sm font-medium text-ink">Cliente</span>
           <select
-            className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
+            className="h-11 rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
             id="customerId"
             {...register("customerId")}
           >
@@ -151,7 +151,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
             ))}
           </select>
           {errors.customerId?.message ? (
-            <span className="text-xs font-medium text-red-700">{errors.customerId.message}</span>
+            <span className="text-xs font-medium text-red-300">{errors.customerId.message}</span>
           ) : null}
         </label>
         <TextField label="Validade" type="date" {...register("validUntil")} />
@@ -161,7 +161,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-ink">Itens</h2>
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-semibold text-ink transition hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-900"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-semibold text-ink transition hover:bg-slate-900 dark:bg-slate-950/40 dark:hover:bg-slate-900"
             onClick={() => append(emptyItem)}
             type="button"
           >
@@ -173,12 +173,12 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
         {fields.map((field, index) => {
           const itemType = watchedItems[index]?.itemType ?? "PRODUCT";
           return (
-            <div className="grid gap-3 rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-950/40" key={field.id}>
+            <div className="grid gap-3 rounded-lg border border-border bg-slate-900 p-4 dark:bg-slate-950/40" key={field.id}>
               <div className="grid gap-3 md:grid-cols-3">
                 <label className="grid gap-1.5">
                   <span className="text-sm font-medium text-ink">Tipo</span>
                   <select
-                    className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
+                    className="h-11 rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
                     {...register(`items.${index}.itemType`)}
                   >
                     <option value="PRODUCT">Produto</option>
@@ -190,7 +190,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
                   <label className="grid gap-1.5 md:col-span-2">
                     <span className="text-sm font-medium text-ink">Produto</span>
                     <select
-                      className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
+                      className="h-11 rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
                       {...register(`items.${index}.productId`)}
                       onChange={(event) => {
                         const product = products.data?.items.find((item) => item.id === event.target.value);
@@ -213,7 +213,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
                   <label className="grid gap-1.5 md:col-span-2">
                     <span className="text-sm font-medium text-ink">Serviço</span>
                     <select
-                      className="h-11 rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
+                      className="h-11 rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
                       {...register(`items.${index}.serviceId`)}
                       onChange={(event) => {
                         const service = services.data?.items.find((item) => item.id === event.target.value);
@@ -248,7 +248,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
                 </p>
                 <button
                   aria-label="Remover item"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-red-200 bg-white text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:bg-slate-950/40 dark:text-red-300 dark:hover:bg-red-950/30"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-red-900/60 bg-panel text-red-300 transition hover:bg-red-950/40 dark:border-red-900/60 dark:bg-slate-950/40 dark:text-red-300 dark:hover:bg-red-950/30"
                   disabled={fields.length === 1}
                   onClick={() => remove(index)}
                   type="button"
@@ -268,7 +268,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
         <TextField label="Observações" {...register("notes")} />
       </div>
 
-      <div className="grid gap-2 rounded-lg border border-border bg-slate-50 p-4 text-sm dark:bg-slate-950/40">
+      <div className="grid gap-2 rounded-lg border border-border bg-slate-900 p-4 text-sm dark:bg-slate-950/40">
         <div className="flex justify-between"><span>Subtotal</span><strong>{currency(preview.subtotal)}</strong></div>
         <div className="flex justify-between"><span>Desconto</span><strong>{currency(preview.discount)}</strong></div>
         <div className="flex justify-between"><span>Frete</span><strong>{currency(preview.shipping)}</strong></div>
@@ -276,7 +276,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
       </div>
 
       {formError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+        <div className="rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm font-medium text-red-300 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
           {formError}
         </div>
       ) : null}
@@ -284,7 +284,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
       <div className="flex flex-wrap justify-end gap-3">
         {onCancel ? (
           <button
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-900 dark:hover:bg-slate-800"
             onClick={onCancel}
             type="button"
           >
@@ -292,7 +292,7 @@ export function QuoteForm({ onCancel, onSaved, quote }: QuoteFormProps) {
           </button>
         ) : (
           <Link
-            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="inline-flex h-10 items-center rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-900 dark:hover:bg-slate-800"
             href="/quotes"
           >
             Cancelar

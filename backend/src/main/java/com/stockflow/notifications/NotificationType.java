@@ -1,0 +1,13 @@
+package com.stockflow.notifications;
+
+public enum NotificationType {
+    QUOTE_APPROVED,
+    QUOTE_REJECTED,
+    QUOTE_COMPLETED,
+    QUOTE_REQUEST_CREATED,
+    QUOTE_REQUEST_CANCELLED,
+    QUOTE_REQUEST_CONVERTED,
+    STOCK_LOW,
+    STOCK_OUT,
+    RESTOCK_REGISTERED
+}

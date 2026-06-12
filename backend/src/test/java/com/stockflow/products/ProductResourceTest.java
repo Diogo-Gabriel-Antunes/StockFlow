@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.junit.QuarkusTest;
 import java.time.Instant;
+import java.util.AbstractMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -28,8 +29,10 @@ class ProductResourceTest {
                 .body("id", notNullValue())
                 .body("name", equalTo("Racao Premium"))
                 .body("sku", equalTo("PET-001"))
+                .body("description", equalTo("Produto para catálogo"))
                 .body("barcode", equalTo("7891000000010"))
                 .body("referenceCode", equalTo("REF-PET-001"))
+                .body("imageUrl", equalTo("https://example.com/produto.jpg"))
                 .body("active", equalTo(true))
                 .extract()
                 .path("id");
@@ -80,7 +83,9 @@ class ProductResourceTest {
                 .body("name", equalTo("Racao Atualizada"))
                 .body("sku", equalTo("PET-002"))
                 .body("barcode", equalTo(null))
-                .body("referenceCode", equalTo(null));
+                .body("referenceCode", equalTo(null))
+                .body("imageUrl", equalTo(null))
+                .body("active", equalTo(false));
 
         given()
                 .header("Authorization", "Bearer " + token)
@@ -104,7 +109,8 @@ class ProductResourceTest {
                 .when()
                 .get("/products/{id}", id)
                 .then()
-                .statusCode(404);
+                .statusCode(200)
+                .body("active", equalTo(false));
     }
 
     @Test
@@ -223,17 +229,20 @@ class ProductResourceTest {
     }
 
     private Map<String, Object> product(String name, String sku, String salePrice, String stockQuantity, String minimumStock) {
-        return Map.of(
-                "name", name,
-                "sku", sku,
-                "category", "Pet",
-                "barcode", "7891000000010",
-                "referenceCode", "REF-PET-001",
-                "costPrice", "12.50",
-                "salePrice", salePrice,
-                "unit", "UN",
-                "stockQuantity", stockQuantity,
-                "minimumStock", minimumStock
+        return Map.ofEntries(
+                entry("name", name),
+                entry("sku", sku),
+                entry("category", "Pet"),
+                entry("description", "Produto para catálogo"),
+                entry("barcode", "7891000000010"),
+                entry("referenceCode", "REF-PET-001"),
+                entry("imageUrl", "https://example.com/produto.jpg"),
+                entry("costPrice", "12.50"),
+                entry("salePrice", salePrice),
+                entry("unit", "UN"),
+                entry("stockQuantity", stockQuantity),
+                entry("minimumStock", minimumStock),
+                entry("active", true)
         );
     }
 
@@ -242,11 +251,17 @@ class ProductResourceTest {
                 "name", name,
                 "sku", sku,
                 "category", "Pet",
+                "description", "Produto atualizado sem imagem",
                 "costPrice", "12.50",
                 "salePrice", salePrice,
                 "unit", "UN",
                 "stockQuantity", "10.000",
-                "minimumStock", "2.000"
+                "minimumStock", "2.000",
+                "active", false
         );
+    }
+
+    private Map.Entry<String, Object> entry(String key, Object value) {
+        return new AbstractMap.SimpleEntry<>(key, value);
     }
 }

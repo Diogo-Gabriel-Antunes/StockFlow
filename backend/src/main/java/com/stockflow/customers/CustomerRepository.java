@@ -47,6 +47,10 @@ public class CustomerRepository implements PanacheRepositoryBase<CustomerEntity,
         return find("company.id = ?1 and id = ?2 and active = true", companyId, id).firstResultOptional();
     }
 
+    public Optional<CustomerEntity> findActiveByPortalToken(String token) {
+        return find("portalToken = ?1 and portalEnabled = true and active = true", token).firstResultOptional();
+    }
+
     public List<CustomerEntity> listRecentActiveByCompany(UUID companyId, int limit) {
         return find("company.id = ?1 and active = true", Sort.by("createdAt").descending(), companyId)
                 .page(Page.of(0, limit))

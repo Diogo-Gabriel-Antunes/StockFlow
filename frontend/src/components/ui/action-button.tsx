@@ -9,9 +9,9 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ActionButtonVariant, string> = {
   default:
-    "border-border bg-white text-ink hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-900",
+    "border-border bg-panel text-ink hover:bg-slate-900 dark:bg-slate-950/40 dark:hover:bg-slate-900",
   danger:
-    "border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:bg-slate-950/40 dark:text-red-300 dark:hover:bg-red-950/30",
+    "border-red-900/60 bg-panel text-red-300 hover:bg-red-950/40 dark:border-red-900/60 dark:bg-slate-950/40 dark:text-red-300 dark:hover:bg-red-950/30",
 };
 
 export function ActionButton({

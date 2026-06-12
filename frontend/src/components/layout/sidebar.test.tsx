@@ -45,9 +45,17 @@ describe("Sidebar", () => {
       "/stock/replenishment",
     );
     expect(screen.getByRole("link", { name: /Orçamentos/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Notificações/i })).toHaveAttribute(
+      "href",
+      "/notifications",
+    );
+    expect(screen.getByRole("link", { name: /Atividades/i })).toHaveAttribute(
+      "href",
+      "/activity-logs",
+    );
     expect(screen.getByRole("link", { name: /Configurações/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Clientes/i })).toHaveClass(
-      "bg-sky-500/15",
+      "bg-sky-950/40",
     );
   });
 

@@ -255,7 +255,7 @@ function TextArea({
     <label className={`grid gap-1.5 ${className ?? ""}`}>
       <span className="text-sm font-medium text-ink">{label}</span>
       <textarea
-        className="min-h-28 rounded-md border border-border bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-slate-500"
+        className="min-h-28 rounded-md border border-border bg-panel px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-muted"
         {...props}
       />
     </label>

@@ -2,8 +2,11 @@
 
 import {
   BarChart3,
+  Bell,
   Boxes,
+  ClipboardList,
   FileText,
+  Inbox,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -28,6 +31,9 @@ const navigationItems = [
   { label: "Estoque baixo", href: "/stock/low", icon: PackageSearch },
   { label: "Reposição / Compras", href: "/stock/replenishment", icon: ShoppingCart },
   { label: "Orçamentos", href: "/quotes", icon: FileText },
+  { label: "Solicitações", href: "/quote-requests", icon: Inbox },
+  { label: "Notificações", href: "/notifications", icon: Bell },
+  { label: "Atividades", href: "/activity-logs", icon: ClipboardList },
   { label: "Configurações", href: "/settings/company", icon: Settings },
 ];
 
@@ -68,14 +74,14 @@ export function Sidebar() {
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-7 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+        <div className="mb-7 flex items-center justify-between rounded-lg border border-slate-100/10 bg-slate-800/5 px-3 py-3">
           <Link className="grid" href="/dashboard" onClick={() => setOpen(false)}>
             <span className="text-lg font-semibold text-white">StockFlow</span>
             <span className="text-xs text-slate-400">Gestão comercial</span>
           </Link>
           <button
             aria-label="Fechar menu"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/10 text-slate-200 lg:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-100/10 text-slate-200 lg:hidden"
             onClick={() => setOpen(false)}
             type="button"
           >
@@ -91,8 +97,8 @@ export function Sidebar() {
               <Link
                 className={`inline-flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition ${
                   active
-                    ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-400/20"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-sky-950/40 text-sky-200 ring-1 ring-sky-400/20"
+                    : "text-slate-400 hover:bg-slate-800/5 hover:text-white"
                 }`}
                 href={item.href}
                 key={item.href}
@@ -105,9 +111,9 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-auto border-t border-white/10 px-2 pt-4">
+        <div className="mt-auto border-t border-slate-100/10 px-2 pt-4">
           <button
-            className="inline-flex h-10 w-full items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold text-slate-200 shadow-subtle transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-10 w-full items-center gap-2 rounded-md border border-slate-100/10 bg-slate-800/5 px-3 text-sm font-semibold text-slate-200 shadow-subtle transition hover:bg-slate-800/10 hover:text-white"
             onClick={logout}
             type="button"
           >

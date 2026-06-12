@@ -172,7 +172,7 @@ export function QuotesPage() {
         }}
       >
         <select
-          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-72"
+          className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-72"
           onChange={(event) => changeStatus(event.target.value as QuoteStatus | "")}
           value={status}
         >
@@ -184,14 +184,14 @@ export function QuotesPage() {
         </select>
         <input
           aria-label="Data inicial"
-          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+          className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
           onChange={(event) => changeDateFrom(event.target.value)}
           type="date"
           value={dateFrom}
         />
         <input
           aria-label="Data final"
-          className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+          className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
           onChange={(event) => changeDateTo(event.target.value)}
           type="date"
           value={dateTo}
@@ -241,7 +241,7 @@ export function QuotesPage() {
                       <div className="flex justify-end gap-2">
                         <Link
                           aria-label={`Ver ${quote.code}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-ink transition hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-900"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-panel text-ink transition hover:bg-slate-900 dark:bg-slate-950/40 dark:hover:bg-slate-900"
                           href={`/quotes/${quote.id}`}
                         >
                           <Eye size={16} aria-hidden="true" />

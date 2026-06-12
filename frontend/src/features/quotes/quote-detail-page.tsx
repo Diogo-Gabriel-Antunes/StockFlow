@@ -133,7 +133,7 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
             action={
               <div className="flex flex-wrap justify-end gap-2">
                 <a
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-panel px-4 text-sm font-semibold text-ink shadow-subtle transition hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800"
                   href={privateQuotePdfUrl(quote.data.id)}
                   rel="noreferrer"
                   target="_blank"
@@ -216,7 +216,7 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
           </div>
 
           {publicLink ? (
-            <Card className="border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/30">
+            <Card className="border-blue-900/60 bg-blue-950/40/70 dark:border-blue-900/60 dark:bg-blue-950/30">
               <CardBody>
               <p className="font-semibold">Link público da proposta</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -224,7 +224,7 @@ export function QuoteDetailPage({ id }: QuoteDetailPageProps) {
                   {publicLink.url}
                 </a>
                 <a
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-semibold text-ink transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-semibold text-ink transition hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800"
                   href={publicQuotePdfUrl(publicLink.token)}
                   rel="noreferrer"
                   target="_blank"

@@ -122,7 +122,7 @@ export function DashboardPage() {
           <label className="grid gap-1.5" htmlFor="dashboard-period">
             <span className="text-sm font-medium text-ink">Filtro</span>
             <select
-              className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-52"
+              className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-52"
               id="dashboard-period"
               onChange={(event) => changePeriod(event.target.value as DashboardPeriodKey)}
               value={period}
@@ -139,7 +139,7 @@ export function DashboardPage() {
               <label className="grid gap-1.5" htmlFor="dashboard-date-from">
                 <span className="text-sm font-medium text-ink">Data inicial</span>
                 <input
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+                  className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
                   id="dashboard-date-from"
                   onChange={(event) => setDateFrom(event.target.value)}
                   type="date"
@@ -149,7 +149,7 @@ export function DashboardPage() {
               <label className="grid gap-1.5" htmlFor="dashboard-date-to">
                 <span className="text-sm font-medium text-ink">Data final</span>
                 <input
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
+                  className="h-11 w-full rounded-md border border-border bg-panel px-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 sm:w-40"
                   id="dashboard-date-to"
                   onChange={(event) => setDateTo(event.target.value)}
                   type="date"
@@ -241,7 +241,7 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
                   <p className="text-sm font-medium text-muted">{card.label}</p>
                   <p className="mt-4 text-3xl font-semibold text-ink">{card.value}</p>
                 </div>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-50 text-primary dark:bg-slate-900">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-900 text-primary dark:bg-slate-900">
                   <Icon size={20} aria-hidden="true" />
                 </span>
               </div>

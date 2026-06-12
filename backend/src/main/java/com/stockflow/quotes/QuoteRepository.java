@@ -50,6 +50,25 @@ public class QuoteRepository implements PanacheRepositoryBase<QuoteEntity, UUID>
         return find("company.id = ?1 and id = ?2", companyId, id).firstResultOptional();
     }
 
+    public Optional<QuoteEntity> findByCustomerAndId(UUID customerId, UUID id) {
+        return find("customer.id = ?1 and id = ?2", customerId, id).firstResultOptional();
+    }
+
+    public List<QuoteEntity> listByCustomerAndStatuses(UUID customerId, Collection<QuoteStatus> statuses, int page, int size) {
+        return find(
+                "customer.id = ?1 and status in ?2",
+                Sort.by("createdAt").descending(),
+                customerId,
+                statuses
+        )
+                .page(Page.of(page, size))
+                .list();
+    }
+
+    public long countByCustomerAndStatuses(UUID customerId, Collection<QuoteStatus> statuses) {
+        return count("customer.id = ?1 and status in ?2", customerId, statuses);
+    }
+
     public long countByCompanyCreatedBetween(UUID companyId, OffsetDateTime start, OffsetDateTime end) {
         return count("company.id = ?1 and createdAt >= ?2 and createdAt < ?3", companyId, start, end);
     }

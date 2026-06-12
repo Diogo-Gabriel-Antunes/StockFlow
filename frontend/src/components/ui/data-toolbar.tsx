@@ -30,7 +30,7 @@ export function DataToolbar({
               size={17}
             />
             <input
-              className="h-11 w-full rounded-md border border-border bg-white pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-slate-500"
+              className="h-11 w-full rounded-md border border-border bg-panel pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40 dark:placeholder:text-muted"
               onChange={(event) => search.onChange(event.target.value)}
               placeholder={search.placeholder}
               value={search.value}

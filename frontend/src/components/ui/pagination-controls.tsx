@@ -32,7 +32,7 @@ export function PaginationControls({
         <label className="flex items-center gap-2">
           <span>Itens por página</span>
           <select
-            className="h-9 rounded-md border border-border bg-white px-2 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
+            className="h-9 rounded-md border border-border bg-panel px-2 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-slate-950/40"
             onChange={(event) => onSizeChange(Number(event.target.value))}
             value={size}
           >

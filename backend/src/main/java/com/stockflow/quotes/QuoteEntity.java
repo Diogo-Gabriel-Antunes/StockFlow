@@ -61,6 +61,7 @@ public class QuoteEntity extends PanacheEntityBase {
     @Column(nullable = false)
     public BigDecimal total = BigDecimal.ZERO;
 
+    @Column(columnDefinition = "text")
     public String notes;
 
     @Column(name = "payment_terms")
@@ -75,6 +76,12 @@ public class QuoteEntity extends PanacheEntityBase {
 
     @Column(name = "customer_rejected_at")
     public OffsetDateTime customerRejectedAt;
+
+    @Column(name = "rejection_reason")
+    public String rejectionReason;
+
+    @Column(name = "customer_decision_at")
+    public OffsetDateTime customerDecisionAt;
 
     @Column(name = "completed_at")
     public OffsetDateTime completedAt;

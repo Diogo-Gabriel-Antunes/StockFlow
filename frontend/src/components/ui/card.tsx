@@ -25,7 +25,7 @@ export function CardHeader({
 }) {
   return (
     <header
-      className={`flex flex-wrap items-start justify-between gap-3 border-b border-border bg-slate-50/50 px-5 py-4 dark:bg-white/[0.02] ${className ?? ""}`}
+      className={`flex flex-wrap items-start justify-between gap-3 border-b border-border bg-slate-900/50 px-5 py-4 dark:bg-slate-800/[0.02] ${className ?? ""}`}
     >
       <div>{children}</div>
       {action}

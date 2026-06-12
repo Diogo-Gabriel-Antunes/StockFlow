@@ -38,6 +38,8 @@ export type Quote = {
   createdBy: string;
   customerApprovedAt: string | null;
   customerRejectedAt: string | null;
+  rejectionReason: string | null;
+  customerDecisionAt: string | null;
   completedAt: string | null;
   completedBy: string | null;
   stockDeducted: boolean;
